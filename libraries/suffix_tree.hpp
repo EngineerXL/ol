@@ -5,26 +5,27 @@
 #include <map>
 #include <vector>
 
+template <class T>
 class suffix_tree_t {
    private:
     const static int INF = 1e9;
     const static int TAB_SIZE = 4;
 
     struct node_t {
-        std::map<char, int> go;
+        std::map<T, int> go;
         int l, len;
         int link = 0;
 
         node_t(int _l, int _len) : l(_l), len(_len) {}
     };
 
-    using item_t = std::pair<char, int>;
+    using item_t = std::pair<T, int>;
 
-    bool can_go(int u, char c) { return data[u].go.count(c); }
+    bool can_go(int u, T c) { return data[u].go.count(c); }
 
-    int go(int u, char c) { return data[u].go[c]; }
+    int go(int u, T c) { return data[u].go[c]; }
 
-    std::string s;
+    std::vector<T> s;
     std::vector<node_t> data;
 
     int size;
@@ -33,11 +34,9 @@ class suffix_tree_t {
     int u = 0;
     int rem = 0;
 
-    int edge_len(int u) { return std::min(size - data[u].l, data[u].len); }
-
     void go_edge() {
         do {
-            char c = s[size - rem];
+            T c = s[size - rem];
             if (!can_go(u, c)) {
                 return;
             }
@@ -68,16 +67,14 @@ class suffix_tree_t {
         }
     }
 
-    int64_t leaves = 0;
-    int64_t substrings = 0;
-
-    void extend(char c) {
+    /* Main function */
+    void extend(const T& c) {
         ++size;
         ++rem;
         int last = 0;
         while (rem) {
             go_edge();
-            char a = s[size - rem];
+            T a = s[size - rem];
             if (!can_go(u, a)) {
                 /* Case 1: creating a leaf */
                 data[u].go[a] = create_node(size - rem);
@@ -87,7 +84,7 @@ class suffix_tree_t {
             } else {
                 int v = go(u, a);
                 int good_len = rem - 1;
-                char t = s[data[v].l + good_len];
+                T t = s[data[v].l + good_len];
                 if (t != c) {
                     /* Case 2: splitting an edge */
                     int split = create_node(data[v].l, good_len);
@@ -139,19 +136,17 @@ class suffix_tree_t {
     }
 
    public:
-    suffix_tree_t(const std::string& _s) : s(_s) {
+    suffix_tree_t(const std::vector<T>& _s) : s(_s) {
         init_root();
         build();
     }
 
     suffix_tree_t() { init_root(); }
 
-    void push_back(char c) {
-        s.push_back(c);
+    void push_back(const T& c) {
+        s.emplace_back(c);
         extend(c);
     }
-
-    int64_t count_subs() { return substrings; }
 
     friend std::ostream& operator<<(std::ostream& out, suffix_tree_t& st) {
         out << "root\n";
@@ -159,18 +154,92 @@ class suffix_tree_t {
         return out;
     }
 
-    std::string lex_min(int k) {
+    /* Different substrings */
+    int64_t leaves = 0;
+    int64_t substrings = 0;
+
+    int edge_len(int u) { return std::min(size - data[u].l, data[u].len); }
+
+    int64_t count_subs() { return substrings; }
+
+    std::vector<T> lex_min(int k) {
         int v = data[0].go.begin()->second;
         int pos = 0;
-        std::string res;
+        std::vector<T> res;
         while (k) {
             if (pos == data[v].len) {
                 v = data[v].go.begin()->second;
                 pos = 0;
             } else {
-                res.push_back(s[data[v].l + pos]);
+                res.emplace_back(s[data[v].l + pos]);
                 ++pos;
                 --k;
+            }
+        }
+        return res;
+    }
+
+    /* Matching statistics */
+    bool can_walk(const std::vector<T>& t, int id, int from, int to, int c_id,
+                  int pos) {
+        T c = t[id];
+        if (pos == 0) {
+            return can_go(from, c);
+        } else {
+            return s[data[to].l + pos] == c;
+        }
+    }
+
+    void walk(const std::vector<T>& t, int id, int& from, int& to, int& c_id,
+              int& pos) {
+        T c = t[id];
+        if (pos == 0) {
+            to = go(from, c);
+            c_id = id;
+            pos = 1;
+        } else {
+            ++pos;
+        }
+        if (pos == data[to].len) {
+            from = to;
+            to = -1;
+            c_id = -1;
+            pos = 0;
+        }
+    }
+
+    std::vector<int> matching_statistics(const std::vector<T>& t) {
+        int n = t.size();
+        std::vector<int> res(n);
+        int from = 0;
+        int to = -1;
+        int c_id = -1;
+        int pos = 0;
+        int r = 0;
+        for (int i = 0; i < n; ++i) {
+            r = std::max(i, r);
+            while (r < n and can_walk(t, r, from, to, c_id, pos)) {
+                walk(t, r, from, to, c_id, pos);
+                ++r;
+            }
+            res[i] = r - i;
+            if (from == 0) {
+                pos = std::max(0, pos - 1);
+            } else {
+                from = data[from].link;
+                to = -1;
+                while (pos) {
+                    T c = t[c_id];
+                    to = go(from, c);
+                    if (pos >= data[to].len) {
+                        c_id += data[to].len;
+                        pos -= data[to].len;
+                        from = to;
+                        to = -1;
+                    } else {
+                        break;
+                    }
+                }
             }
         }
         return res;
