@@ -3,64 +3,67 @@
 
 #include <vector>
 
+/**
+ * Zero-indexed segment tree
+ * T should have operator+
+ * Intervals is expected to be [l, r)
+ * 0 <= l < r <= n
+ */
+
 template <class T>
 class segment_tree_t {
    private:
-    size_t _size;
-    std::vector<T> _data;
+    int n;
+
+    using vt = std::vector<T>;
+    vt tr;
+
+    void build(const vt& vec, int id, int lo, int hi) {
+        if (lo + 1 == hi) {
+            tr[id] = vec[lo];
+            return;
+        }
+        int mid = (lo + hi) / 2;
+        build(vec, id * 2 + 1, lo, mid);
+        build(vec, id * 2 + 2, mid, hi);
+        tr[id] = tr[id * 2 + 1] + tr[id * 2 + 2];
+    }
+
+    T get(int id, int lo, int hi, int l, int r) {
+        if (r <= lo || hi <= l) {
+            return T();
+        }
+        if (l <= lo && hi <= r) {
+            return tr[id];
+        }
+        int mid = (lo + hi) / 2;
+        return get(id * 2 + 1, lo, mid, l, r) + get(id * 2 + 2, mid, hi, l, r);
+    }
+
+    void set(int id, int lo, int hi, int pos, const T& elem) {
+        if (lo + 1 == hi) {
+            tr[id] = elem;
+            return;
+        }
+        int mid = (lo + hi) / 2;
+        if (pos < mid) {
+            set(id * 2 + 1, lo, mid, pos, elem);
+        } else {
+            set(id * 2 + 2, mid, hi, pos, elem);
+        }
+        tr[id] = tr[id * 2 + 1] + tr[id * 2 + 2];
+    }
 
    public:
-    segment_tree_t(const size_t& n) : _size(n), _data(4 * n) {}
+    segment_tree_t(int _n) : n(_n), tr(4 * n) {}
 
-    segment_tree_t(const std::vector<T>& vec)
-        : _size(vec.size()), _data(4 * vec.size()) {
-        build(vec, 1, 1, _size);
+    segment_tree_t(const vt& vec) : segment_tree_t(vec.size()) {
+        build(vec, 0, 0, n);
     }
 
-    void build(const std::vector<T>& vec, size_t id, size_t l, size_t r) {
-        if (l >= r) {
-            _data[id] = vec[l - 1];
-            return;
-        }
-        size_t m = (l + r) / 2;
-        build(vec, id * 2, l, m);
-        build(vec, id * 2 + 1, m + 1, r);
-        _data[id] = _data[id * 2] + _data[id * 2 + 1];
-    }
+    T get(int l, int r) { return get(0, 0, n, l, r); }
 
-    ~segment_tree_t() = default;
-
-    T get(size_t ql, size_t qr) { return get(1, ql, qr, 1, _size); }
-
-    T get(size_t id, size_t ql, size_t qr, size_t l, size_t r) {
-        if (ql <= l and r <= qr) {
-            return _data[id];
-        }
-        size_t m = (l + r) / 2;
-        if (qr <= m) {
-            return get(id * 2, ql, qr, l, m);
-        }
-        if (ql > m) {
-            return get(id * 2 + 1, ql, qr, m + 1, r);
-        }
-        return get(id * 2, ql, qr, l, m) + get(id * 2 + 1, ql, qr, m + 1, r);
-    }
-
-    void set(size_t pos, const T& elem) { set(1, 1, _size, pos, elem); }
-
-    void set(size_t id, size_t l, size_t r, size_t pos, const T& elem) {
-        if (l >= r) {
-            _data[id] = elem;
-            return;
-        }
-        size_t m = (l + r) / 2;
-        if (pos <= m) {
-            set(id * 2, l, m, pos, elem);
-        } else {
-            set(id * 2 + 1, m + 1, r, pos, elem);
-        }
-        _data[id] = _data[id * 2] + _data[id * 2 + 1];
-    }
+    void set(int pos, const T& elem) { set(0, 0, n, pos, elem); }
 };
 
 #endif /* SEGMENT_TREE */

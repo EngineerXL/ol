@@ -1,6 +1,7 @@
 #ifndef TREAP_HPP
 #define TREAP_HPP
 
+#include <cassert>
 #include <chrono>
 #include <iostream>
 #include <random>
@@ -112,6 +113,7 @@ class treap_t {
         }
     }
 
+    // l <= key
     void split(treap_ptr t, int key, treap_ptr &l, treap_ptr &r) {
         if (t == nullptr) {
             l = nullptr;
@@ -120,7 +122,7 @@ class treap_t {
         }
         push(t);
         int key_left_subtree = get_key(t->_left);
-        if (key > key_left_subtree + 1) {
+        if (key >= key_left_subtree + 1) {
             split(t->_right, key - key_left_subtree - 1, t->_right, r);
             l = t;
         } else {
@@ -179,8 +181,8 @@ class treap_t {
         treap_ptr l = nullptr;
         treap_ptr m = nullptr;
         treap_ptr r = nullptr;
-        split(root, key + 1, m, r);
-        split(m, key, l, m);
+        split(root, key, m, r);
+        split(m, key - 1, l, m);
         m->_value = value;
         m->_seg = value;
         root = merge(merge(l, m), r);
@@ -190,8 +192,8 @@ class treap_t {
         treap_ptr l = nullptr;
         treap_ptr m = nullptr;
         treap_ptr r = nullptr;
-        split(root, key_r + 1, m, r);
-        split(m, key_l, l, m);
+        split(root, key_r, m, r);
+        split(m, key_l - 1, l, m);
         int64_t ans = get_seg(m);
         root = merge(merge(l, m), r);
         return ans;
@@ -201,8 +203,8 @@ class treap_t {
         treap_ptr l = nullptr;
         treap_ptr m = nullptr;
         treap_ptr r = nullptr;
-        split(root, key_r + 1, m, r);
-        split(m, key_l, l, m);
+        split(root, key_r, m, r);
+        split(m, key_l - 1, l, m);
         update(m, x);
         root = merge(merge(l, m), r);
     }
@@ -211,8 +213,8 @@ class treap_t {
         treap_ptr l = nullptr;
         treap_ptr m = nullptr;
         treap_ptr r = nullptr;
-        split(root, key_r + 1, m, r);
-        split(m, key_l, l, m);
+        split(root, key_r, m, r);
+        split(m, key_l - 1, l, m);
         reverse(m);
         root = merge(merge(l, m), r);
     }
@@ -225,6 +227,24 @@ class treap_t {
     void push_front(int64_t value) {
         treap_ptr m = new treap_node_t(1, value);
         root = merge(m, root);
+    }
+
+    void pop_back() {
+        treap_ptr l = nullptr;
+        treap_ptr r = nullptr;
+        split(root, root->_key - 1, l, r);
+        assert(r != nullptr);
+        delete r;
+        root = l;
+    }
+
+    void pop_front() {
+        treap_ptr l = nullptr;
+        treap_ptr r = nullptr;
+        split(root, 1, l, r);
+        assert(l != nullptr);
+        delete l;
+        root = r;
     }
 
     ~treap_t() { delete root; }

@@ -3,9 +3,11 @@
 
 #include <iostream>
 
-template <int64_t mod>
+using ll = signed long long int;
+
+template <ll mod>
 struct modular_t {
-    int64_t value;
+    ll value;
 
     modular_t() : value() {}
 
@@ -15,8 +17,8 @@ struct modular_t {
     }
 
     template <class T>
-    static int64_t normalize(T x) {
-        int64_t val;
+    static ll normalize(T x) {
+        ll val;
         if (-mod <= x and x < mod) {
             val = x;
         } else {
@@ -110,7 +112,7 @@ struct modular_t {
     }
 
     friend std::istream& operator>>(std::istream& in, modular_t& num) {
-        int64_t val;
+        ll val;
         in >> val;
         num.value = normalize(val);
         return in;
@@ -118,9 +120,9 @@ struct modular_t {
 
     template <class T>
     friend modular_t power(modular_t a, T deg) {
-        int64_t x = a.value;
-        int64_t y = deg;
-        int64_t z = 1;
+        ll x = a.value;
+        ll y = deg;
+        ll z = 1;
         while (y) {
             if (y & 1) {
                 z = (z * x) % mod;
@@ -143,16 +145,16 @@ struct modular_t {
 #include <iostream>
 #include <vector>
 
-const int K = 20;
-const int64_t MOD = 7340033;
-const int64_t WN = 5;
+const int K = 23;
+const ll MOD = (119 << 23) + 1;
+const ll WN = 31;
 
 using base = modular_t<MOD>;
 using vc = std::vector<base>;
 
-const int64_t WN_INVERSE = base(WN).inverse().value;
+const ll WN_INVERSE = base(WN).inverse().value;
 
-int lg_2(int64_t x) {
+int lg_2(ll x) {
     int y = 0;
     while ((1 << y) < x) {
         ++y;
@@ -160,8 +162,8 @@ int lg_2(int64_t x) {
     return y;
 }
 
-int64_t rev_bits(int64_t x, int n) {
-    int64_t y = 0;
+ll rev_bits(ll x, int n) {
+    ll y = 0;
     for (int i = 0; i < n; ++i) {
         y = y ^ (x & 1);
         y = y << 1;
@@ -213,6 +215,8 @@ struct polynom {
     polynom() : data(1), n(1) {}
 
     polynom(int _n) : data(_n), n(_n) {}
+
+    polynom(int _n, const base& el) : data(_n, el), n(_n) {}
 
     polynom(const vec& coef) : data(coef), n(data.size()) {}
 

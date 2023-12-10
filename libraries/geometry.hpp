@@ -36,7 +36,7 @@ struct vector2d_t {
     }
 
     friend vec2d operator-(const vec2d& a, const vec2d& b) {
-        return vec2d(a.x - b.x, a.y - b.y, a.z - b.z);
+        return vec2d(a.x - b.x, a.y - b.y);
     }
 
     vec2d& operator-=(const vec2d& v) {
@@ -75,7 +75,7 @@ struct vector2d_t {
         return out;
     }
 
-    static double dot(const vec2d& a, const vec2d& b) {
+    friend double dot(const vec2d& a, const vec2d& b) {
         return a.x * b.x + a.y * b.y;
     }
 
@@ -83,6 +83,14 @@ struct vector2d_t {
 
     friend T cross(const vec2d& a, const vec2d& b) {
         return a.x * b.y - a.y * b.x;
+    }
+
+    friend bool operator<(const vec2d& a, const vec2d& b) {
+        if (abs(a.x - b.x) > 0) {
+            return a.x < b.x;
+        } else {
+            return a.y < b.y;
+        }
     }
 };
 
