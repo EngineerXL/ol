@@ -1,87 +1,90 @@
 #ifndef LAZY_SEGMENT_TREE
 #define LAZY_SEGMENT_TREE
 
+#include <vector>
+
+/**
+ * Zero-indexed segment tree
+ * min and add on segment
+ * Intervals is expected to be [l, r)
+ * 0 <= l < r <= n
+ */
+
 template <class T>
 class lazy_segment_tree_t {
    private:
-    size_t _size;
-    std::vector<T> _data;
-    std::vector<T> _delay;
+    int n;
+
+    using vt = std::vector<T>;
+    vt tr;
+    vt delay;
+
+    const T INF = 1e18;
+
+    T f(const T& x, const T& y) { return std::min(x, y); }
+
+    void build(const vt& vec, int id, int lo, int hi) {
+        if (lo + 1 == hi) {
+            tr[id] = vec[lo];
+            return;
+        }
+        int mid = (lo + hi) / 2;
+        build(vec, id * 2 + 1, lo, mid);
+        build(vec, id * 2 + 2, mid, hi);
+        tr[id] = f(tr[id * 2 + 1], tr[id * 2 + 2]);
+    }
+
+    void push(int id, int lo, int hi) {
+        if (delay[id] == 0) {
+            return;
+        }
+        tr[id] += delay[id];
+        if (lo + 1 < hi) {
+            delay[id * 2 + 1] += delay[id];
+            delay[id * 2 + 2] += delay[id];
+        }
+        delay[id] = 0;
+    }
+
+    T get(int id, int lo, int hi, int l, int r) {
+        push(id, lo, hi);
+        if (r <= lo || hi <= l) {
+            return INF;
+        }
+        if (l <= lo && hi <= r) {
+            return tr[id];
+        }
+        int mid = (lo + hi) / 2;
+        return f(get(id * 2 + 1, lo, mid, l, r),
+                 get(id * 2 + 2, mid, hi, l, r));
+    }
+
+    void upd(int id, int lo, int hi, int l, int r, const T& val) {
+        push(id, lo, hi);
+        if (r <= lo || hi <= l) {
+            return;
+        }
+        if (l <= lo && hi <= r) {
+            delay[id] += val;
+            push(id, lo, hi);
+            return;
+        }
+        int mid = (lo + hi) / 2;
+        upd(id * 2 + 1, lo, mid, l, r, val);
+        upd(id * 2 + 2, mid, hi, l, r, val);
+        tr[id] = f(tr[id * 2 + 1], tr[id * 2 + 2]);
+    }
 
    public:
-    lazy_segment_tree_t(const size_t& n)
-        : _size(n), _data(4 * n), _delay(4 * n) {}
+    lazy_segment_tree_t(int _n) : n(_n), tr(4 * n), delay(4 * n) {}
 
-    lazy_segment_tree_t(const std::vector<T>& vec)
-        : lazy_segment_tree_t(vec.size()) {
-        build(vec, 1, 1, _size);
+    lazy_segment_tree_t(const vt& vec) : lazy_segment_tree_t(vec.size()) {
+        build(vec, 0, 0, n);
     }
 
-    void build(const std::vector<T>& vec, size_t id, size_t l, size_t r) {
-        if (l >= r) {
-            _data[id] = vec[l - 1];
-            return;
-        }
-        size_t m = (l + r) / 2;
-        build(vec, id * 2, l, m);
-        build(vec, id * 2 + 1, m + 1, r);
-        _data[id] = std::min(_data[id * 2], _data[id * 2 + 1]);
-    }
+    T get(int l, int r) { return get(0, 0, n, l, r); }
 
-    ~lazy_segment_tree_t() = default;
-
-    void push(size_t id, size_t l, size_t r) {
-        if (_delay[id] == 0) {
-            return;
-        }
-        _data[id] += _delay[id];
-        if (id * 2 < _data.size()) {
-            _delay[id * 2] += _delay[id];
-        }
-        if (id * 2 + 1 < _data.size()) {
-            _delay[id * 2 + 1] += _delay[id];
-        }
-        _delay[id] = 0;
-    }
-
-    T get(size_t ql, size_t qr) { return get(1, ql, qr, 1, _size); }
-
-    T get(size_t id, size_t ql, size_t qr, size_t l, size_t r) {
-        push(id, l, r);
-        if (ql <= l and r <= qr) {
-            return _data[id];
-        }
-        size_t m = (l + r) / 2;
-        if (qr <= m) {
-            return get(id * 2, ql, qr, l, m);
-        }
-        if (ql > m) {
-            return get(id * 2 + 1, ql, qr, m + 1, r);
-        }
-        return std::min(get(id * 2, ql, qr, l, m),
-                        get(id * 2 + 1, ql, qr, m + 1, r));
-    }
-
-    void add(size_t ql, size_t qr, const T& val) {
-        add(1, ql, qr, 1, _size, val);
-    }
-
-    void add(size_t id, size_t ql, size_t qr, size_t l, size_t r,
-             const T& val) {
-        push(id, l, r);
-        if (qr < l or r < ql) {
-            return;
-        }
-        if (ql <= l and r <= qr) {
-            _delay[id] += val;
-            push(id, l, r);
-            return;
-        }
-        size_t m = (l + r) / 2;
-        add(id * 2, ql, qr, l, m, val);
-        add(id * 2 + 1, ql, qr, m + 1, r, val);
-        _data[id] = std::min(_data[id * 2], _data[id * 2 + 1]);
-    }
+    void upd(int l, int r, const T& val) { upd(0, 0, n, l, r, val); }
 };
 
 #endif /* LAZY_SEGMENT_TREE */
