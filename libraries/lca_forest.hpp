@@ -69,7 +69,8 @@ class dfs_forest_t : public forest_t<T> {
           parent(n),
           sz(n, 1),
           tin(n),
-          tout(n) {}
+          tout(n),
+          timer(0) {}
 
     void dfs_all() {
         for (int i = 0; i < n; ++i) {
@@ -81,9 +82,8 @@ class dfs_forest_t : public forest_t<T> {
     }
 
     void dfs_from(int u) {
-        depth[u] = u;
+        depth[u] = 0;
         parent[u] = u;
-        timer = 0;
         dfs(u);
     }
 
@@ -144,7 +144,7 @@ class lca_forest_t : public dfs_forest_t<T> {
         for (int i = 0; i < n; ++i) {
             max_depth = std::max(max_depth, depth[i]);
         }
-        h = 0;
+        h = 1;
         while ((1 << h) <= max_depth) {
             ++h;
         }
