@@ -74,8 +74,8 @@ struct aho_corasikh : trie_t {
     aho_corasikh() = default;
 
     aho_corasikh(const std::vector<std::string>& s) {
-        for (const auto& elem : s) {
-            insert(elem);
+        for (size_t i = 0; i < s.size(); ++i) {
+            insert(s[i], i);
         }
         build();
     }
@@ -117,7 +117,7 @@ struct aho_corasikh : trie_t {
                 g[suff[u]].push_back(u);
                 // word
                 v = suff[u];
-                word[v] = end(v) ? v : word[v];
+                word[u] = end(v) ? v : word[v];
             }
             // atmt
             for (int j = 0; j < S; ++j) {
@@ -132,9 +132,8 @@ struct aho_corasikh : trie_t {
     }
 
     using vl = std::vector<long long>;
-    vl vis;
-    vl find_all(const std::string& s) {
-        vis.resize(n);
+    vl find_all_cnt(const std::string& s) {
+        vl vis(n, 0);
         int u = 0;
         for (char c : s) {
             u = atmt[u][c - A];
@@ -149,6 +148,24 @@ struct aho_corasikh : trie_t {
         for (int u = 0; u < n; ++u) {
             for (int elem : data[u].ids) {
                 res[elem] = vis[u];
+            }
+        }
+        return res;
+    }
+
+    using vi = std::vector<int>;
+    std::vector<vi> find_all_occ(const std::string& s) {
+        std::vector<vi> res(data[0].dp);
+        int u = 0, k = s.size();
+        for (int i = 0; i < k; ++i) {
+            char c = s[i];
+            u = atmt[u][c - A];
+            int v = end(u) ? u : word[u];
+            while (v) {
+                for (int el : data[v].ids) {
+                    res[el].push_back(i);
+                }
+                v = word[v];
             }
         }
         return res;
