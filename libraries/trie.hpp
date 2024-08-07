@@ -19,11 +19,13 @@ class trie_t {
 
     /* Returns index of new node */
     int create_node() {
-        data.push_back(node_t());
+        data.emplace_back();
         return data.size() - 1;
     }
 
-    bool can_go(int u, char c) { return data[u].go.count(c); }
+    bool can_go(int u, char c) {
+        return data[u].go.count(c) && dp(go(u, c)) > 0;
+    }
 
     int& go(int u, char c) { return data[u].go[c]; }
 
