@@ -7,7 +7,6 @@
 
 template <class T, int B>
 struct digital_trie_t {
-   private:
     struct node_t {
         std::array<int, 2> go;
         int dp;
@@ -31,13 +30,7 @@ struct digital_trie_t {
 
     int& dp(int u) { return data[u].dp; }
 
-   public:
-    const int SUM_S = (2e5 + 200) * B;
-
-    digital_trie_t() {
-        data.reserve(SUM_S);
-        create_node();
-    }
+    digital_trie_t() { create_node(); }
 
     bool get_bit(T x, int pos) { return x & (1ll << pos); }
 

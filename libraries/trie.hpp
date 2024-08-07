@@ -5,8 +5,7 @@
 #include <string>
 #include <vector>
 
-class trie_t {
-   private:
+struct trie_t {
     struct node_t {
         std::map<char, int> go;
         int end = 0;
@@ -23,9 +22,7 @@ class trie_t {
         return data.size() - 1;
     }
 
-    bool can_go(int u, char c) {
-        return data[u].go.count(c) && dp(go(u, c)) > 0;
-    }
+    bool can_go(int u, char c) { return data[u].go.count(c); }
 
     int& go(int u, char c) { return data[u].go[c]; }
 
@@ -33,13 +30,7 @@ class trie_t {
 
     int& end(int u) { return data[u].end; }
 
-   public:
-    const int SUM_S = 1 << 21;
-
-    trie_t() {
-        data.reserve(SUM_S);
-        create_node();
-    }
+    trie_t() { create_node(); }
 
     void insert(const std::string& s) {
         int u = 0;
@@ -61,7 +52,7 @@ class trie_t {
             u = go(u, c);
         }
         --dp(u);
-        --data[u].end;
+        --end(u);
     }
 
     int count(const std::string& s) {
@@ -72,7 +63,7 @@ class trie_t {
             }
             u = go(u, c);
         }
-        return data[u].end;
+        return end(u);
     }
 };
 
