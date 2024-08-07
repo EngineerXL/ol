@@ -1,8 +1,8 @@
 #ifndef TRIE_HPP
 #define TRIE_HPP
 
-#include <iostream>
 #include <map>
+#include <string>
 #include <vector>
 
 class trie_t {
@@ -25,58 +25,41 @@ class trie_t {
 
     bool can_go(int u, char c) { return data[u].go.count(c); }
 
-    int go(int u, char c) { return data[u].go[c]; }
+    int& go(int u, char c) { return data[u].go[c]; }
 
-    const static int TAB_SIZE = 4;
+    int& dp(int u) { return data[u].dp; }
 
-    void print(int id, std::ostream& out, int h) {
-        for (item_t elem : data[id].go) {
-            for (int i = 0; i < TAB_SIZE * (h - 1); ++i) {
-                out << ' ';
-            }
-            out << "|-> ";
-            int next = elem.second;
-            out << '{' << elem.first << ", dp =  " << data[next].dp
-                << ", end = " << data[next].end << "}\n";
-            print(next, out, h + 1);
-        }
-    }
+    int& end(int u) { return data[u].end; }
 
    public:
-    trie_t() { create_node(); }
+    const int SUM_S = 1 << 21;
+
+    trie_t() {
+        data.reserve(SUM_S);
+        create_node();
+    }
 
     void insert(const std::string& s) {
         int u = 0;
         for (char c : s) {
             if (!can_go(u, c)) {
-                data[u].go[c] = create_node();
+                go(u, c) = create_node();
             }
-            ++data[u].dp;
+            ++dp(u);
             u = go(u, c);
         }
-        ++data[u].dp;
-        ++data[u].end;
+        ++dp(u);
+        ++end(u);
     }
 
     void erase(const std::string& s) {
         int u = 0;
         for (char c : s) {
-            --data[u].dp;
+            --dp(u);
             u = go(u, c);
         }
-        --data[u].dp;
+        --dp(u);
         --data[u].end;
-    }
-
-    bool find(const std::string& s) {
-        int u = 0;
-        for (char c : s) {
-            if (!can_go(u, c)) {
-                return false;
-            }
-            u = go(u, c);
-        }
-        return data[u].end;
     }
 
     int count(const std::string& s) {
@@ -89,37 +72,6 @@ class trie_t {
         }
         return data[u].end;
     }
-
-    std::string find_k_lex(int k) {
-        int u = 0;
-        std::string res;
-        while (1) {
-            for (item_t elem : data[u].go) {
-                int v = elem.second;
-                if (data[v].dp >= k) {
-                    char c = elem.first;
-                    res.push_back(c);
-                    u = v;
-                    k -= data[u].end;
-                    if (k <= 0) {
-                        return res;
-                    }
-                    break;
-                } else {
-                    k -= data[v].dp;
-                }
-            }
-        }
-        return res;
-    }
-
-    friend std::ostream& operator<<(std::ostream& out, trie_t& tr) {
-        out << "root\n";
-        tr.print(0, out, 1);
-        return out;
-    }
-
-    ~trie_t() = default;
 };
 
 #endif /* TRIE_HPP */
