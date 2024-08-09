@@ -12,10 +12,12 @@ class suffix_automaton_t {
         std::map<char, int> go;
         // Suffix link
         int link = -1;
-        // Max length of string ending in current state
+        // Max string length ending at current state
         int len = 0;
         // Terminal state
         int end = 0;
+        // Number of reachable terminal states
+        int dp = -1;
 
         friend std::ostream& operator<<(std::ostream& out, node_t& item) {
             for (item_t elem : item.go) {
@@ -41,6 +43,8 @@ class suffix_automaton_t {
 
     int& end(int u) { return data[u].end; }
 
+    int& dp(int u) { return data[u].dp; }
+
     int size() { return data.size(); }
 
     int create_node() {
@@ -54,8 +58,15 @@ class suffix_automaton_t {
     }
 
     friend std::ostream& operator<<(std::ostream& out, suffix_automaton_t& sa) {
-        for (int i = 0; i < sa.size(); ++i) {
-            out << "id = " << i << '\n' << sa.data[i] << '\n';
+        out << sa.size() << '\n';
+        for (int u = 0; u < sa.size(); ++u) {
+            for (const auto& [c, v] : sa.data[u].go) {
+                out << u << ' ' << v << ' ' << c << '\n';
+            }
+            int p = sa.link(u);
+            if (p > 0) {
+                out << u << ' ' << p << " ~" << '\n';
+            }
         }
         return out;
     }
@@ -78,11 +89,23 @@ class suffix_automaton_t {
         }
     }
 
+    void dfs(int u) {
+        if (dp(u) != -1) {
+            return;
+        }
+        dp(u) = end(u);
+        for (const auto& [_, v] : data[u].go) {
+            dfs(v);
+            dp(u) += dp(v);
+        }
+    }
+
     void build(const std::string& s) {
         for (char c : s) {
             build(c);
         }
         mark_term();
+        dfs(0);
     }
 
     void build(char c) {
@@ -113,16 +136,16 @@ class suffix_automaton_t {
         last = cur;
     }
 
-    bool find(const std::string& s) {
+    int count(const std::string& s) {
         int u = 0;
         for (char c : s) {
             if (!can_go(u, c)) {
-                return false;
+                return 0;
             } else {
                 u = go(u, c);
             }
         }
-        return true;
+        return dp(u);
     }
 };
 
