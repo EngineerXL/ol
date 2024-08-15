@@ -23,6 +23,29 @@ struct two_sat_t {
         add_edge(v ^ 1, u);
     }
 
+    int add_var() {
+        for (int i = 0; i < 2; ++i) {
+            g.emplace_back();
+            gt.emplace_back();
+        }
+        return n++;
+    }
+
+    void at_most_one(const std::vector<int>& vars) {
+        if (vars.size() < 2) {
+            return;
+        }
+        int m = vars.size(), prev = vars[0];
+        for (int i = 1; i < m - 1; ++i) {
+            int next = add_var(), x = vars[i];
+            add_or(~prev, ~x);
+            add_or(~prev, next);
+            add_or(~x, next);
+            prev = next;
+        }
+        add_or(~prev, ~vars.back());
+    }
+
     void dfs(int u) {
         if (vis[u]) {
             return;
