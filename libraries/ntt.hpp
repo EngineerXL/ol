@@ -145,6 +145,9 @@ struct modular_t {
 #include <iostream>
 #include <vector>
 
+// const int K = 20;
+// const ll MOD = 7340033;
+// const ll WN = 5;
 const int K = 23;
 const ll MOD = (119 << 23) + 1;
 const ll WN = 31;
@@ -288,6 +291,9 @@ struct polynom {
             a[i] *= b[i];
         }
         ntt(a, true);
+        // Shrinks result for better performance
+        // in D&C tasks
+        a.resize(lhs.size() + rhs.size() - 1);
         return a;
     }
 
@@ -327,6 +333,7 @@ struct polynom {
             }
             polynom rem = q * p0;
             polynom r(cur_m);
+            rem.resize(2 * cur_m);
             for (int i = 0; i < cur_m; ++i) {
                 r[i] = rem[i + cur_m];
             }
