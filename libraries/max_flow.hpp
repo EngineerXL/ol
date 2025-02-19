@@ -6,65 +6,70 @@
 #include <queue>
 #include <vector>
 
-class flow_network_t {
-   public:
-    struct flow_edge_t {
-        int u, v;
-        int64_t c, f;
+// Flow network
+struct flow_network_t {
+    using ll = long long;
+    using vi = std::vector<int>;
 
-        flow_edge_t(int _u, int _v, int64_t _c) : u(_u), v(_v), c(_c), f() {}
+    // Directed edge u -> v with capacity c and flow value f
+    struct edge_t {
+        int u, v;
+        ll c, f;
+
+        edge_t(int u, int v, ll c) : u(u), v(v), c(c), f() {}
     };
 
-    const int64_t INF = 1e18;
-    const int64_t MAX_B = 1 << 30;
+    int n, source, sink;
+    vi d, ptr;
+    std::vector<vi> g;
+    std::vector<edge_t> e;
+    static const ll INF = 1e18;
 
-    using vec = std::vector<int>;
-    using vecsz = std::vector<size_t>;
-    using graph = std::vector<vec>;
-    using edges = std::vector<flow_edge_t>;
+    flow_network_t(int n) : n(n), d(n), ptr(n), g(n) {}
 
-    int n;
-    graph g;
-    edges e;
-
-    flow_network_t(int _n) : n(_n), g(n), d(n), ptr(n) {}
-
-    void add_edge(int u, int v, int64_t cap) {
-        flow_edge_t uv(u, v, cap);
-        flow_edge_t vu(v, u, 0);
+    // Adds directed edge u -> v with capacity c
+    void add_edge(int u, int v, ll c) {
         g[u].push_back(e.size());
-        e.push_back(uv);
+        e.emplace_back(u, v, c);
         g[v].push_back(e.size());
-        e.push_back(vu);
+        e.emplace_back(v, u, 0);
     }
 
-    int64_t max_flow(int start, int finish) {
+    // Finds the maximum flow from vertex s to vertex t
+    ll max_flow(int s, int t) {
+        source = s, sink = t;
         clear_flow();
-        int64_t res = 0;
-        for (int64_t b = MAX_B; b > 0; b = b >> 1) {
-            res += dinic(start, finish, b);
-        }
+        ll max_c = 0, res = 0;
+        for (auto [u, v, c, f] : e) max_c = std::max(max_c, c);
+        for (ll b = max_c; b > 0; b >>= 1) res += dinic(b);
         return res;
     }
 
-   private:
-    vec d;
-    vecsz ptr;
+    friend std::ostream& operator<<(std::ostream& out,
+                                    const flow_network_t& fn) {
+        for (int i = 0; i < fn.n; ++i) {
+            for (int j : fn.g[i]) {
+                if (j & 1) continue;
+                auto [u, v, c, f] = fn.e[j];
+                out << u + 1 << ' ' << v + 1 << ' ' << f << '/' << c << '\n';
+            }
+        }
+        return out;
+    }
 
-    void build_network(int start, int finish, int64_t b) {
+    // Performs BFS in residual graph
+    void bfs(ll b) {
         d.assign(n, -1);
-        d[start] = 0;
+        d[source] = 0;
         std::queue<int> q;
-        q.push(start);
+        q.push(source);
         while (!q.empty()) {
             int u = q.front();
             q.pop();
-            if (u == finish) {
-                break;
-            }
+            if (u == sink) break;
             for (int ind : g[u]) {
-                int64_t c = e[ind].c;
-                int64_t f = e[ind].f;
+                ll c = e[ind].c;
+                ll f = e[ind].f;
                 int v = e[ind].v;
                 if (c - f >= b and d[v] == -1) {
                     d[v] = d[u] + 1;
@@ -74,21 +79,15 @@ class flow_network_t {
         }
     }
 
-    int64_t dfs_push(int u, int finish, int64_t b, int64_t flow) {
-        if (u == finish) {
-            return flow;
-        }
-        for (; ptr[u] < g[u].size(); ++ptr[u]) {
+    // Finds augment path form sink to source
+    ll dfs_push(int u, ll b, ll flow) {
+        if (u == sink) return flow;
+        for (; ptr[u] < (int)g[u].size(); ++ptr[u]) {
             int ind = g[u][ptr[u]];
-            flow_edge_t uv = e[ind];
-            int v = uv.v;
-            if (d[u] + 1 != d[v]) {
-                continue;
-            }
-            int64_t f = uv.f;
-            int64_t c = uv.c;
+            auto [_, v, c, f] = e[ind];
+            if (d[u] + 1 != d[v]) continue;
             if (c - f >= b) {
-                int64_t pushed = dfs_push(v, finish, b, std::min(flow, c - f));
+                ll pushed = dfs_push(v, b, std::min(flow, c - f));
                 if (pushed) {
                     e[ind].f += pushed;
                     e[ind ^ 1].f -= pushed;
@@ -99,44 +98,25 @@ class flow_network_t {
         return 0;
     }
 
-    int64_t dinic(int start, int finish, int64_t b) {
-        int64_t res = 0;
+    ll dinic(ll b) {
+        ll res = 0;
         while (1) {
-            build_network(start, finish, b);
-            if (d[finish] == -1) {
-                break;
-            }
+            bfs(b);
+            if (d[sink] == -1) break;
             ptr.assign(n, 0);
             while (1) {
-                int64_t flow = dfs_push(start, finish, b, INF);
-                if (flow) {
+                ll flow = dfs_push(source, b, INF);
+                if (flow)
                     res += flow;
-                } else {
+                else
                     break;
-                }
             }
         }
         return res;
     }
 
     void clear_flow() {
-        for (flow_edge_t& elem : e) {
-            elem.f = 0;
-        }
-    }
-
-    friend std::ostream& operator<<(std::ostream& out,
-                                    const flow_network_t& fn) {
-        size_t m = fn.e.size();
-        for (size_t i = 0; i < m; i += 2) {
-            flow_edge_t elem = fn.e[i];
-            int u = elem.u + 1;
-            int v = elem.v + 1;
-            int64_t f = elem.f;
-            int64_t c = elem.c;
-            out << u << ' ' << v << ' ' << f << '/' << c << '\n';
-        }
-        return out;
+        for (auto& [u, v, c, f] : e) f = 0;
     }
 };
 
