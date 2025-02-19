@@ -82,6 +82,10 @@ struct flow_network_t {
                 for (int j : path) res.back().push_back(e[j].v);
                 f.push_back(mn_f);
                 f_max -= mn_f;
+            } else {
+                // Theoretically we should never find a cycle
+                // because algo finds augment paths along
+                // the shortest paths in residual network
             }
             for (int j : path) e[j].f -= mn_f;
             vis.assign(n, 0);
