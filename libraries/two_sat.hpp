@@ -17,6 +17,8 @@ struct two_sat_t {
         gt[v].push_back(u);
     }
 
+    // Adds x OR y closure (0-indexed)
+    // Use '~' to add negation
     void add_or(int x, int y) {
         int u = x < 0 ? 2 * ~x + 1 : 2 * x, v = y < 0 ? 2 * ~y + 1 : 2 * y;
         add_edge(u ^ 1, v);
@@ -31,6 +33,8 @@ struct two_sat_t {
         return n++;
     }
 
+    // At most one variable is true
+    // Use ~x to set NOT x
     void at_most_one(const std::vector<int>& vars) {
         if (vars.size() < 2) {
             return;
@@ -69,6 +73,9 @@ struct two_sat_t {
 
     int id;
     vi order, vis, comps, res;
+
+    // Find solution of 2-SAT problem
+    // If solution exists, result is stored in res
     bool solve() {
         order.clear();
         vis.assign(2 * n, 0);
