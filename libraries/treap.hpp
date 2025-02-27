@@ -1,253 +1,87 @@
 #ifndef TREAP_HPP
 #define TREAP_HPP
 
+#include <array>
 #include <cassert>
-#include <chrono>
-#include <iostream>
 #include <random>
 
-std::mt19937 rng(std::chrono::steady_clock::now().time_since_epoch().count());
+using treap_key_type = uint32_t;
+using treap_val_type = int;
 
-class treap_t {
-    static const int64_t INF = 1e18;
-    static const int TAB_SIZE = 4;
+// Function on segment
+treap_val_type f(const treap_val_type& lhs, const treap_val_type& rhs) {
+    return lhs + rhs;
+}
 
-    struct treap_node_t {
-        treap_node_t *_left;
-        treap_node_t *_right;
-        int _key;
-        int64_t _priority;
+// Cartesian tree node
+// x - size of the subtree
+// Change treap_val_type and f for your needs
+// Set MAX_NODES to constrains of your problem
+struct node_t {
+    node_t* left = nullptr;
+    node_t* right = nullptr;
+    treap_key_type x;
+    treap_val_type data, seg;
 
-        int64_t _value;
-        int64_t _seg;
-        bool _reverse;
-        int64_t _delay;
-
-        treap_node_t(int key, int64_t value) {
-            _left = nullptr;
-            _right = nullptr;
-            _key = key;
-            _priority = rng();
-            _value = value;
-            _seg = value;
-            _reverse = false;
-            _delay = 0;
-        }
-
-        ~treap_node_t() {
-            delete _left;
-            delete _right;
-        }
-    };
-
-    using treap_ptr = treap_node_t *;
-
-    treap_ptr root;
-
-    int get_key(treap_ptr t) {
-        if (t != nullptr) {
-            return t->_key;
-        } else {
-            return 0;
-        }
-    }
-
-    void reverse(treap_ptr t) {
-        if (t != nullptr) {
-            t->_reverse = t->_reverse ^ 1;
-        }
-    }
-
-    /* Change this */
-    int64_t get_value(treap_ptr t) {
-        if (t != nullptr) {
-            push(t);
-            return t->_value;
-        } else {
-            return -INF;
-        }
-    }
-
-    /* Change this */
-    int64_t get_seg(treap_ptr t) {
-        if (t != nullptr) {
-            push(t);
-            return t->_seg;
-        } else {
-            return -INF;
-        }
-    }
-
-    /* Change this */
-    void update(treap_ptr t, int64_t x) {
-        if (t != nullptr) {
-            t->_delay += x;
-        }
-    }
-
-    /* Change this */
-    void push(treap_ptr t) {
-        if (t != nullptr) {
-            if (t->_delay != 0) {
-                update(t->_left, t->_delay);
-                update(t->_right, t->_delay);
-                t->_value += t->_delay;
-                t->_seg += t->_delay;
-                t->_delay = 0;
-            }
-            if (t->_reverse) {
-                std::swap(t->_left, t->_right);
-                reverse(t->_left);
-                reverse(t->_right);
-                t->_reverse = false;
-            }
-        }
-    }
-
-    /* Change this */
-    void update_node(treap_ptr t) {
-        if (t != nullptr) {
-            t->_key = 1 + get_key(t->_left) + get_key(t->_right);
-            t->_seg = std::max(get_seg(t->_left), get_seg(t->_right));
-            t->_seg = std::max(t->_seg, t->_value);
-        }
-    }
-
-    // l <= key
-    void split(treap_ptr t, int key, treap_ptr &l, treap_ptr &r) {
-        if (t == nullptr) {
-            l = nullptr;
-            r = nullptr;
-            return;
-        }
-        push(t);
-        int key_left_subtree = get_key(t->_left);
-        if (key >= key_left_subtree + 1) {
-            split(t->_right, key - key_left_subtree - 1, t->_right, r);
-            l = t;
-        } else {
-            split(t->_left, key, l, t->_left);
-            r = t;
-        }
-        update_node(t);
-    }
-
-    treap_ptr merge(treap_ptr l, treap_ptr r) {
-        if (l == nullptr) {
-            return r;
-        }
-        if (r == nullptr) {
-            return l;
-        }
-        if (l->_priority > r->_priority) {
-            push(l);
-            l->_right = merge(l->_right, r);
-            update_node(l);
-            return l;
-        } else {
-            push(r);
-            r->_left = merge(l, r->_left);
-            update_node(r);
-            return r;
-        }
-    }
-
-    friend std::ostream &operator<<(std::ostream &out, treap_t t) {
-        print_treap(out, t.root, 0);
-        return out;
-    }
-
-    friend std::ostream &operator<<(std::ostream &out, treap_ptr t) {
-        print_treap(out, t, 0);
-        return out;
-    }
-
-    friend void print_treap(std::ostream &out, treap_ptr t, int h) {
-        if (t != nullptr) {
-            print_treap(out, t->_left, h + 1);
-            for (int i = 0; i < TAB_SIZE * h; ++i) {
-                out << " ";
-            }
-            out << "{ key = " << t->_key << ", val = " << t->_value
-                << ", seg = " << t->_seg << "}\n";
-            print_treap(out, t->_right, h + 1);
-        }
-    }
-
-   public:
-    treap_t() { root = nullptr; }
-
-    void set(int key, int64_t value) {
-        treap_ptr l = nullptr;
-        treap_ptr m = nullptr;
-        treap_ptr r = nullptr;
-        split(root, key, m, r);
-        split(m, key - 1, l, m);
-        m->_value = value;
-        m->_seg = value;
-        root = merge(merge(l, m), r);
-    }
-
-    int64_t get(int key_l, int key_r) {
-        treap_ptr l = nullptr;
-        treap_ptr m = nullptr;
-        treap_ptr r = nullptr;
-        split(root, key_r, m, r);
-        split(m, key_l - 1, l, m);
-        int64_t ans = get_seg(m);
-        root = merge(merge(l, m), r);
-        return ans;
-    }
-
-    void update(int key_l, int key_r, int64_t x) {
-        treap_ptr l = nullptr;
-        treap_ptr m = nullptr;
-        treap_ptr r = nullptr;
-        split(root, key_r, m, r);
-        split(m, key_l - 1, l, m);
-        update(m, x);
-        root = merge(merge(l, m), r);
-    }
-
-    void reverse(int key_l, int key_r) {
-        treap_ptr l = nullptr;
-        treap_ptr m = nullptr;
-        treap_ptr r = nullptr;
-        split(root, key_r, m, r);
-        split(m, key_l - 1, l, m);
-        reverse(m);
-        root = merge(merge(l, m), r);
-    }
-
-    void push_back(int64_t value) {
-        treap_ptr m = new treap_node_t(1, value);
-        root = merge(root, m);
-    }
-
-    void push_front(int64_t value) {
-        treap_ptr m = new treap_node_t(1, value);
-        root = merge(m, root);
-    }
-
-    void pop_back() {
-        treap_ptr l = nullptr;
-        treap_ptr r = nullptr;
-        split(root, root->_key - 1, l, r);
-        assert(r != nullptr);
-        delete r;
-        root = l;
-    }
-
-    void pop_front() {
-        treap_ptr l = nullptr;
-        treap_ptr r = nullptr;
-        split(root, 1, l, r);
-        assert(l != nullptr);
-        delete l;
-        root = r;
-    }
-
-    ~treap_t() { delete root; }
+    node_t() = default;
+    node_t(const treap_val_type& val) : x(1), data(val), seg(val) {}
 };
+
+const size_t MAX_NODES = 5e5 + 228;
+size_t _nodes_cnt = 0;
+std::array<node_t, MAX_NODES> _storage;
+std::mt19937 _treap_rng(1000 - 7);
+
+// Cartesian tree node pointer
+using treap = node_t*;
+
+// Create a node
+treap create(const treap_val_type& val) {
+    _storage[_nodes_cnt] = node_t(val);
+    assert(_nodes_cnt < MAX_NODES);
+    return &_storage[_nodes_cnt++];
+}
+
+treap_key_type get_x(treap t) { return t ? t->x : 0; }
+
+treap_val_type get_seg(treap t) { return t ? t->seg : treap_val_type(); }
+
+void update(treap t) {
+    if (t == nullptr) return;
+    t->x = 1 + get_x(t->left) + get_x(t->right);
+    t->seg = f(get_seg(t->left), f(t->data, get_seg(t->right)));
+}
+
+// Splits t into l and r, invalidates pointer
+// l will contain x elements
+void split(treap t, treap_key_type x, treap& l, treap& r) {
+    if (t == nullptr) {
+        l = r = nullptr;
+        return;
+    }
+    if (x <= get_x(t->left)) {
+        split(t->left, x, l, t->left);
+        r = t;
+    } else {
+        split(t->right, x - 1 - get_x(t->left), t->right, r);
+        l = t;
+    }
+    update(t);
+}
+
+// Merges two treaps l and r, invalidates pointers
+treap merge(treap l, treap r) {
+    if (l == nullptr) return r;
+    if (r == nullptr) return l;
+    if (_treap_rng() % (get_x(l) + get_x(r)) < get_x(l)) {
+        l->right = merge(l->right, r);
+        update(l);
+        return l;
+    } else {
+        r->left = merge(l, r->left);
+        update(r);
+        return r;
+    }
+}
 
 #endif /* TREAP_HPP */
