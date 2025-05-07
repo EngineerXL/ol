@@ -14,10 +14,10 @@
 template <class T>
 class segment_tree_t {
    private:
-    int n;
-
     using vt = std::vector<T>;
+    int n;
     vt tr;
+    T nullval;
 
     void build(const vt& vec, int id, int lo, int hi) {
         if (lo + 1 == hi) {
@@ -38,7 +38,8 @@ class segment_tree_t {
             return tr[id];
         }
         int mid = (lo + hi) / 2;
-        return f(get(id * 2 + 1, lo, mid, l, r), get(id * 2 + 2, mid, hi, l, r));
+        return f(get(id * 2 + 1, lo, mid, l, r),
+                 get(id * 2 + 2, mid, hi, l, r));
     }
 
     void set(int id, int lo, int hi, int pos, const T& elem) {
@@ -56,15 +57,17 @@ class segment_tree_t {
     }
 
    public:
-    T nullval = T();
-
     T f(const T& x, const T& y) { return std::max(x, y); }
 
-    segment_tree_t(int _n) : n(_n), tr(4 * n) {}
+    segment_tree_t(int _n, const T& val) : n(_n), tr(4 * n), nullval(val) {}
 
-    segment_tree_t(const vt& vec) : segment_tree_t(vec.size()) { build(vec, 0, 0, n); }
+    segment_tree_t(const vt& vec, const T& val)
+        : segment_tree_t(vec.size(), val) {
+        build(vec, 0, 0, n);
+    }
 
-    segment_tree_t(int _n, const T& x) : segment_tree_t(std::vector<T>(_n, x)) {}
+    segment_tree_t(int _n, const T& x, const T& val)
+        : segment_tree_t(std::vector<T>(_n, x), val) {}
 
     T get(int l, int r) { return get(0, 0, n, l, r); }
 
