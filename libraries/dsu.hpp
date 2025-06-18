@@ -7,38 +7,26 @@
 
 struct dsu_t {
     int n;
-    std::vector<int> leader;
-    std::vector<int> size;
+    std::vector<int> p;
+    std::vector<int> sz;
 
    public:
-    dsu_t(const int _n) : n(_n), leader(n), size(n, 1) {
-        std::iota(leader.begin(), leader.end(), 0);
-    }
+    dsu_t(int n) : n(n), p(n), sz(n, 1) { std::iota(p.begin(), p.end(), 0); }
 
-    int find(int u) {
-        assert(0 <= u and u < n);
-        int u_leader = leader[u];
-        if (u_leader != u) {
-            leader[u] = find(u_leader);
-        }
-        return leader[u];
-    }
+    int find(int u) { return u == p[u] ? u : p[u] = find(p[u]); }
 
-    int get_size(int u) { return size[find(u)]; }
+    int get_size(int u) { return sz[find(u)]; }
 
     bool join(int u, int v) {
-        int u_leader = find(u);
-        int v_leader = find(v);
-        if (u_leader == v_leader) {
-            return false;
-        }
-        if (size[u_leader] < size[v_leader]) {
-            std::swap(u_leader, v_leader);
-        }
-        size[u_leader] = size[u_leader] + size[v_leader];
-        leader[v_leader] = u_leader;
+        u = find(u), v = find(v);
+        if (u == v) return false;
+        if (sz[u] < sz[v]) std::swap(u, v);
+        sz[u] += sz[v];
+        p[v] = u;
         return true;
     }
+
+    bool is_same(int u, int v) { return find(u) == find(v); }
 };
 
 #endif /* DSU_HPP */
