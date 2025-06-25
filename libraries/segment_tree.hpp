@@ -7,7 +7,7 @@
 
 /**
  * Zero-indexed segment tree
- * T should have operator+
+ * max on segment, set val at pos
  * Intervals is expected to be [l, r)
  * 0 <= l < r <= n
  */
@@ -42,16 +42,16 @@ class segment_tree_t {
                  get(id * 2 + 2, mid, hi, l, r));
     }
 
-    void set(int id, int lo, int hi, int pos, const T& elem) {
+    void set(int id, int lo, int hi, int pos, const T& val) {
         if (lo + 1 == hi) {
-            tr[id] = elem;
+            tr[id] = val;
             return;
         }
         int mid = (lo + hi) / 2;
         if (pos < mid) {
-            set(id * 2 + 1, lo, mid, pos, elem);
+            set(id * 2 + 1, lo, mid, pos, val);
         } else {
-            set(id * 2 + 2, mid, hi, pos, elem);
+            set(id * 2 + 2, mid, hi, pos, val);
         }
         tr[id] = f(tr[id * 2 + 1], tr[id * 2 + 2]);
     }
@@ -71,7 +71,7 @@ class segment_tree_t {
 
     T get(int l, int r) { return get(0, 0, n, l, r); }
 
-    void set(int pos, const T& elem) { set(0, 0, n, pos, elem); }
+    void set(int pos, const T& val) { set(0, 0, n, pos, val); }
 };
 
 #endif /* SEGMENT_TREE */
