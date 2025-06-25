@@ -121,7 +121,7 @@ struct flow_network_t {
                 T c = e[ind].c;
                 T f = e[ind].f;
                 int v = e[ind].v;
-                if (c - f >= b and d[v] == -1) {
+                if (c - f >= b && d[v] == -1) {
                     d[v] = d[u] + 1;
                     q.push(v);
                 }
