@@ -3,32 +3,33 @@
 
 #include <algorithm>
 #include <iostream>
+#include <limits>
 #include <queue>
 #include <vector>
 
 // Flow network
+template <class T>
 struct flow_network_t {
-    using ll = long long;
     using vi = std::vector<int>;
 
     // Directed edge u -> v with capacity c and flow value f
     struct edge_t {
         int u, v;
-        ll c, f;
+        T c, f;
 
-        edge_t(int u, int v, ll c) : u(u), v(v), c(c), f() {}
+        edge_t(int u, int v, T c) : u(u), v(v), c(c), f(0) {}
     };
 
     int n, source, sink;
     vi d, ptr, vis, path;
     std::vector<vi> g;
     std::vector<edge_t> e;
-    static const ll INF = 1e18;
+    static const T INF = std::numeric_limits<T>::max();
 
     flow_network_t(int n) : n(n), d(n), ptr(n), vis(n), g(n) {}
 
     // Adds directed edge u -> v with capacity c
-    void add_edge(int u, int v, ll c) {
+    void add_edge(int u, int v, T c) {
         g[u].push_back(e.size());
         e.emplace_back(u, v, c);
         g[v].push_back(e.size());
@@ -37,12 +38,12 @@ struct flow_network_t {
 
     // Finds the maximum flow from vertex s to vertex t
     // Complexity is O(|V| * |E| * log(c_max)) in general case
-    ll max_flow(int s, int t) {
+    T max_flow(int s, int t) {
         source = s, sink = t;
         clear_flow();
-        ll max_c = 0, res = 0;
+        T max_c = 0, res = 0;
         for (auto [u, v, c, f] : e) max_c = std::max(max_c, c);
-        for (ll b = max_c; b > 0; b >>= 1) res += dinic(b);
+        for (T b = max_c; b > 0; b >>= 1) res += dinic(b);
         return res;
     }
 
@@ -71,11 +72,11 @@ struct flow_network_t {
     // Return vector of paths and vector of flow values along paths
     // f_max restricts summary flow value to decompose
     // Complexity is O(|V| * |E|)
-    std::pair<std::vector<vi>, std::vector<ll>> decompose(ll f_max = INF) {
+    std::pair<std::vector<vi>, std::vector<T>> decompose(T f_max = INF) {
         std::vector<vi> res;
-        std::vector<ll> f;
+        std::vector<T> f;
         while (f_max > 0 && dfs(source)) {
-            ll mn_f = INF;
+            T mn_f = INF;
             for (int j : path) mn_f = std::min(mn_f, e[j].f);
             if (e[path.back()].v == sink) {
                 res.emplace_back(1, source);
@@ -107,7 +108,7 @@ struct flow_network_t {
     }
 
     // Performs BFS in residual graph
-    void bfs(ll b) {
+    void bfs(T b) {
         d.assign(n, -1);
         d[source] = 0;
         std::queue<int> q;
@@ -117,8 +118,8 @@ struct flow_network_t {
             q.pop();
             if (u == sink) break;
             for (int ind : g[u]) {
-                ll c = e[ind].c;
-                ll f = e[ind].f;
+                T c = e[ind].c;
+                T f = e[ind].f;
                 int v = e[ind].v;
                 if (c - f >= b and d[v] == -1) {
                     d[v] = d[u] + 1;
@@ -129,14 +130,14 @@ struct flow_network_t {
     }
 
     // Finds augment path form sink to source
-    ll dfs_push(int u, ll b, ll flow) {
+    T dfs_push(int u, T b, T flow) {
         if (u == sink) return flow;
         for (; ptr[u] < (int)g[u].size(); ++ptr[u]) {
             int ind = g[u][ptr[u]];
             auto [_, v, c, f] = e[ind];
             if (d[u] + 1 != d[v]) continue;
             if (c - f >= b) {
-                ll pushed = dfs_push(v, b, std::min(flow, c - f));
+                T pushed = dfs_push(v, b, std::min(flow, c - f));
                 if (pushed) {
                     e[ind].f += pushed;
                     e[ind ^ 1].f -= pushed;
@@ -147,14 +148,14 @@ struct flow_network_t {
         return 0;
     }
 
-    ll dinic(ll b) {
-        ll res = 0;
+    T dinic(T b) {
+        T res = 0;
         while (1) {
             bfs(b);
             if (d[sink] == -1) break;
             ptr.assign(n, 0);
             while (1) {
-                ll flow = dfs_push(source, b, INF);
+                T flow = dfs_push(source, b, INF);
                 if (flow)
                     res += flow;
                 else
