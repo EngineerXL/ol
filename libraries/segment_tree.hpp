@@ -2,6 +2,7 @@
 #define SEGMENT_TREE
 
 #include <algorithm>
+#include <limits>
 #include <vector>
 
 /**
@@ -17,7 +18,6 @@ class segment_tree_t {
     using vt = std::vector<T>;
     int n;
     vt tr;
-    T nullval;
 
     void build(const vt& vec, int id, int lo, int hi) {
         if (lo + 1 == hi) {
@@ -57,17 +57,17 @@ class segment_tree_t {
     }
 
    public:
+    T nullval = std::numeric_limits<T>::min();
+
     T f(const T& x, const T& y) { return std::max(x, y); }
 
-    segment_tree_t(int _n, const T& val) : n(_n), tr(4 * n), nullval(val) {}
+    segment_tree_t(int n) : n(n), tr(4 * n) {}
 
-    segment_tree_t(const vt& vec, const T& val)
-        : segment_tree_t(vec.size(), val) {
+    segment_tree_t(const vt& vec) : segment_tree_t(vec.size()) {
         build(vec, 0, 0, n);
     }
 
-    segment_tree_t(int _n, const T& x, const T& val)
-        : segment_tree_t(std::vector<T>(_n, x), val) {}
+    segment_tree_t(int n, const T& x) : segment_tree_t(std::vector<T>(n, x)) {}
 
     T get(int l, int r) { return get(0, 0, n, l, r); }
 
