@@ -16,12 +16,8 @@
 template <class T>
 struct dynamic_hull_t {
     using point_t = std::array<T, 2>;
-    static point_t sub(const point_t& a, const point_t& b) {
-        return {a[0] - b[0], a[1] - b[1]};
-    }
-    static T cross(const point_t& a, const point_t& b) {
-        return a[0] * b[1] - b[0] * a[1];
-    }
+    static point_t sub(const point_t& a, const point_t& b) { return {a[0] - b[0], a[1] - b[1]}; }
+    static T cross(const point_t& a, const point_t& b) { return a[0] * b[1] - b[0] * a[1]; }
     static point_t rot180(const point_t& a) { return {-a[0], -a[1]}; }
 
     struct envelope_t {
@@ -33,7 +29,7 @@ struct dynamic_hull_t {
             if (next(it) != ps.end()) rem_edge(*next(it), *it);
             it = ps.erase(it);
             if (it != ps.end() && it != ps.begin()) add_edge(*it, *prev(it));
-        };
+        }
 
         void add_point(const point_t& p) {
             if (it != ps.end() && it != ps.begin()) rem_edge(*it, *prev(it));
@@ -48,7 +44,7 @@ struct dynamic_hull_t {
                 add_point(p);
                 return;
             }
-            if (it != ps.end()) {
+            if (it != ps.end())
                 while (next(it) != ps.end()) {
                     point_t cur = *it, nxt = *next(it);
                     if (cross(sub(nxt, cur), sub(p, cur)) >= 0) {
@@ -57,8 +53,7 @@ struct dynamic_hull_t {
                         break;
                     }
                 }
-            }
-            if (it != ps.begin()) {
+            if (it != ps.begin())
                 while (prev(it) != ps.begin()) {
                     it = prev(it);
                     auto cur = *it, prv = *prev(it);
@@ -69,7 +64,6 @@ struct dynamic_hull_t {
                         break;
                     }
                 }
-            }
             add_point(p);
         }
 
@@ -93,12 +87,8 @@ struct dynamic_hull_t {
 
         // Example
         T area = 0;
-        void add_edge(const point_t& a, const point_t& b) {
-            area += cross(a, b);
-        }
-        void rem_edge(const point_t& a, const point_t& b) {
-            area -= cross(a, b);
-        }
+        void add_edge(const point_t& a, const point_t& b) { area += cross(a, b); }
+        void rem_edge(const point_t& a, const point_t& b) { area -= cross(a, b); }
     };
 
     // Example
