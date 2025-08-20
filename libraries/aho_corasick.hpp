@@ -70,40 +70,42 @@ struct trie_t {
     }
 };
 
+// Aho-Corasikh automaton
+// Use atmt field to get access to automaton
+// Change S and A to modify alhabet
 struct aho_corasikh : trie_t {
     aho_corasikh() = default;
 
     aho_corasikh(const std::vector<std::string>& s) {
-        for (size_t i = 0; i < s.size(); ++i) {
-            insert(s[i], i);
-        }
+        for (size_t i = 0; i < s.size(); ++i) insert(s[i], i);
         build();
     }
 
     const int S = 26;
     const char A = 'a';
 
+    using vl = std::vector<long long>;
+    using vi = std::vector<int>;
+
     int n;
-    std::vector<int> suff, word, q;
+    vi suff, word, q;
     std::vector<item_t> parent;
-    std::vector<std::vector<int>> atmt, g;
+    std::vector<vi> atmt, g;
+    // Builds an automaton, should be called once
+    // after all string are inserted in the trie
     void build() {
         n = data.size();
         suff.resize(n), word.resize(n);
         parent.resize(n, {'$', -1});
-        atmt.resize(n, std::vector<int>(S)), g.resize(n);
+        atmt.resize(n, vi(S)), g.resize(n);
         for (int u = 0; u < n; ++u) {
-            for (auto [c, v] : data[u].go) {
-                parent[v] = {c, u};
-            }
+            for (auto [c, v] : data[u].go) parent[v] = {c, u};
         }
         q.reserve(n);
         size_t ptr = 0;
         for (q.push_back(0); ptr < q.size(); ++ptr) {
             int u = q[ptr];
-            for (auto [_, v] : data[u].go) {
-                q.push_back(v);
-            }
+            for (auto [_, v] : data[u].go) q.push_back(v);
             if (u) {
                 // suff
                 auto [c, v] = parent[u];
@@ -121,17 +123,17 @@ struct aho_corasikh : trie_t {
             }
             // atmt
             for (int j = 0; j < S; ++j) {
-                if (can_go(u, A + j)) {
+                if (can_go(u, A + j))
                     atmt[u][j] = go(u, A + j);
-                } else {
+                else
                     atmt[u][j] = atmt[suff[u]][j];
-                }
             }
         }
         std::reverse(q.begin(), q.end());
     }
 
-    using vl = std::vector<long long>;
+    // Calculates how many times each pattern-string
+    // in automaton occured in s as a substring
     vl find_all_cnt(const std::string& s) {
         vl vis(n, 0);
         int u = 0;
@@ -140,20 +142,17 @@ struct aho_corasikh : trie_t {
             ++vis[u];
         }
         for (int u : q) {
-            for (int v : g[u]) {
-                vis[u] += vis[v];
-            }
+            for (int v : g[u]) vis[u] += vis[v];
         }
         vl res(data[0].dp);
         for (int u = 0; u < n; ++u) {
-            for (int elem : data[u].ids) {
-                res[elem] = vis[u];
-            }
+            for (int elem : data[u].ids) res[elem] = vis[u];
         }
         return res;
     }
 
-    using vi = std::vector<int>;
+    // Calculates vector of positions where each pattern-string
+    // occured in s as a substring
     std::vector<vi> find_all_occ(const std::string& s) {
         std::vector<vi> res(data[0].dp);
         int u = 0, k = s.size();
@@ -162,9 +161,7 @@ struct aho_corasikh : trie_t {
             u = atmt[u][c - A];
             int v = end(u) ? u : word[u];
             while (v) {
-                for (int el : data[v].ids) {
-                    res[el].push_back(i);
-                }
+                for (int el : data[v].ids) res[el].push_back(i);
                 v = word[v];
             }
         }
