@@ -37,8 +37,8 @@ struct hld_t {
     }
 
     // Change if needed
-    const static T INIT_TR_VALS = 0;
-    const static T INIT_GET_VAL = 0;
+    constexpr static T INIT_TR_VALS = 0;
+    constexpr static T INIT_GET_VAL = 0;
 
     // Bidirectional adjancy list of a tree, root is 0
     hld_t(const std::vector<std::vector<int>>& g)
@@ -86,6 +86,9 @@ struct hld_t {
         proc(u, v, [&](int lo, int hi) { res = tr.f(res, tr.get(lo, hi)); });
         return res;
     }
+
+    // // Update value at vertex or on edge to parent
+    void upd_vertex(int u, const T& val) { tr.upd(tin[u], tin[u] + 1, val); }
 
     // Update value in subtree
     void upd_sub(int u, const T& val) {
