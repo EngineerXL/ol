@@ -10,6 +10,7 @@
  * max on segment, set val at pos
  * Intervals is expected to be [l, r)
  * 0 <= l < r <= n
+ * O(log(n)) per segment query or modification
  */
 
 template <class T>
@@ -38,8 +39,7 @@ class segment_tree_t {
             return tr[id];
         }
         int mid = (lo + hi) / 2;
-        return f(get(id * 2 + 1, lo, mid, l, r),
-                 get(id * 2 + 2, mid, hi, l, r));
+        return f(get(id * 2 + 1, lo, mid, l, r), get(id * 2 + 2, mid, hi, l, r));
     }
 
     void set(int id, int lo, int hi, int pos, const T& val) {
@@ -63,9 +63,7 @@ class segment_tree_t {
 
     segment_tree_t(int n) : n(n), tr(4 * n) {}
 
-    segment_tree_t(const vt& vec) : segment_tree_t(vec.size()) {
-        build(vec, 0, 0, n);
-    }
+    segment_tree_t(const vt& vec) : segment_tree_t(vec.size()) { build(vec, 0, 0, n); }
 
     segment_tree_t(int n, const T& x) : segment_tree_t(std::vector<T>(n, x)) {}
 
