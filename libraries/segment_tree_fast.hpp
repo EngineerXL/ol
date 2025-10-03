@@ -10,7 +10,6 @@
  * max on segment, set val at pos
  * Intervals is expected to be [l, r)
  * 0 <= l < r <= n
- * O(log(n)) per segment query or modification
  * The constant factor is lower, than at recursive version
  */
 
@@ -39,6 +38,7 @@ class segment_tree_t {
 
     segment_tree_t(int n, const T& x) : segment_tree_t(std::vector<T>(n, x)) {}
 
+    // Get f of elements on segment [l, r)
     T get(int l, int r) {
         T resl = nullval, resr = nullval;
         for (l += n, r += n; l < r; l /= 2, r /= 2) {
@@ -48,6 +48,7 @@ class segment_tree_t {
         return f(resl, resr);
     }
 
+    // Set value at position pos to val
     void set(int pos, const T& val) {
         tr[pos += n] = val;
         for (; pos > 1; pos /= 2) tr[pos / 2] = f(tr[pos], tr[pos ^ 1]);
