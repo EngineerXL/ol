@@ -15,11 +15,10 @@
 template <class T>
 class segment_tree_t {
    private:
-    using vt = std::vector<T>;
     int n;
-    vt tr;
+    std::vector<T> tr;
 
-    void build(const vt& vec, int id, int lo, int hi) {
+    void build(const std::vector<T>& vec, int id, int lo, int hi) {
         if (lo + 1 == hi) {
             tr[id] = vec[lo];
             return;
@@ -62,7 +61,7 @@ class segment_tree_t {
 
     segment_tree_t(int n) : n(n), tr(4 * n) {}
 
-    segment_tree_t(const vt& vec) : segment_tree_t(vec.size()) { build(vec, 0, 0, n); }
+    segment_tree_t(const std::vector<T>& vec) : segment_tree_t(vec.size()) { build(vec, 0, 0, n); }
 
     segment_tree_t(int n, const T& x) : segment_tree_t(std::vector<T>(n, x)) {}
 

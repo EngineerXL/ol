@@ -18,11 +18,10 @@
 template <class T>
 class segment_tree_t {
    private:
-    using vt = std::vector<T>;
     int n;
-    vt tr;
+    std::vector<T> tr;
 
-    void build(const vt& vec) {
+    void build(const std::vector<T>& vec) {
         for (int i = 0; i < n; ++i) tr[i + n] = vec[i];
         for (int id = n - 1; id >= 0; --id) tr[id] = f(tr[id * 2 + 0], tr[id * 2 + 1]);
     }
@@ -34,7 +33,7 @@ class segment_tree_t {
 
     segment_tree_t(int n) : n(n), tr(2 * n) {}
 
-    segment_tree_t(const vt& vec) : segment_tree_t(vec.size()) { build(vec); }
+    segment_tree_t(const std::vector<T>& vec) : segment_tree_t(vec.size()) { build(vec); }
 
     segment_tree_t(int n, const T& x) : segment_tree_t(std::vector<T>(n, x)) {}
 
@@ -50,8 +49,7 @@ class segment_tree_t {
 
     // Set value at position pos to val
     void set(int pos, const T& val) {
-        tr[pos += n] = val;
-        for (; pos > 1; pos /= 2) tr[pos / 2] = f(tr[pos], tr[pos ^ 1]);
+        for (tr[pos += n] = val; pos > 1; pos /= 2) tr[pos / 2] = f(tr[pos], tr[pos ^ 1]);
     }
 };
 
