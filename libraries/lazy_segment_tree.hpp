@@ -18,7 +18,6 @@ class lazy_segment_tree_t {
    private:
     int n;
     std::vector<T> tr;
-    std::vector<int> len;
     std::vector<D> delay;
 
     void build(const std::vector<T>& vec, int id, int lo, int hi) {
@@ -30,20 +29,17 @@ class lazy_segment_tree_t {
         build(vec, id * 2 + 1, lo, mid);
         build(vec, id * 2 + 2, mid, hi);
         tr[id] = f(tr[id * 2 + 1], tr[id * 2 + 2]);
-        len[id] = len[id * 2 + 1] + len[id * 2 + 2];
     }
 
     void apply_to_node(int id, const D& val) {
-        apply_to_val(tr[id], val, len[id]);
-        if (len[id] > 1) apply_to_del(delay[id], val);
+        apply_to_val(tr[id], val);
+        apply_to_del(delay[id], val);
     }
 
     void push(int id) {
         if (delay[id] == nulldel) return;
-        if (len[id] > 1) {
-            apply_to_node(id * 2 + 1, delay[id]);
-            apply_to_node(id * 2 + 2, delay[id]);
-        }
+        apply_to_node(id * 2 + 1, delay[id]);
+        apply_to_node(id * 2 + 2, delay[id]);
         delay[id] = nulldel;
     }
 
@@ -90,12 +86,12 @@ class lazy_segment_tree_t {
     constexpr static D nulldel = 0;
 
     // Apply delayed value to interval
-    void apply_to_val(T& x, const D& y, int len) { x += y; }
+    void apply_to_val(T& x, const D& y) { x += y; }
 
     // Update delayed value
     void apply_to_del(D& x, const D& y) { x += y; }
 
-    lazy_segment_tree_t(int n) : n(n), tr(4 * n), len(4 * n, 1), delay(4 * n, nulldel) {}
+    lazy_segment_tree_t(int n) : n(n), tr(4 * n), delay(4 * n, nulldel) {}
 
     lazy_segment_tree_t(const std::vector<T>& vec) : lazy_segment_tree_t(vec.size()) {
         build(vec, 0, 0, n);
