@@ -12,14 +12,15 @@
  * 0 <= l < r <= n
  * The constant factor is lower, than at recursive version
  */
-
-#include <iostream>
-
 template <class T>
 class segment_tree_t {
    private:
     int n;
     std::vector<T> tr;
+
+    // Recusrive segment tree works well with l < 0 or r > n,
+    // but non-recursive does not, so we should clamp query borders
+    void clamp(int& pos) { pos = std::min(std::max(0, pos), n); }
 
     void build(const std::vector<T>& vec) {
         for (int i = 0; i < n; ++i) tr[i + n] = vec[i];
@@ -39,6 +40,7 @@ class segment_tree_t {
 
     // Get f of elements on segment [l, r)
     T get(int l, int r) {
+        clamp(l), clamp(r);
         T resl = nullval, resr = nullval;
         for (l += n, r += n; l < r; l /= 2, r /= 2) {
             if (l & 1) resl = f(resl, tr[l++]);

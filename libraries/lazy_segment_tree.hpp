@@ -12,7 +12,6 @@
  * 0 <= l < r <= n
  * T is node type, D is delay type
  */
-
 template <class T, class D>
 class lazy_segment_tree_t {
    private:

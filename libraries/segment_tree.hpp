@@ -5,13 +5,12 @@
 #include <limits>
 #include <vector>
 
-/**
+/*
  * Zero-indexed segment tree
  * max on segment, set val at pos
  * Intervals is expected to be [l, r)
  * 0 <= l < r <= n
  */
-
 template <class T>
 class segment_tree_t {
    private:
