@@ -41,6 +41,7 @@ class segment_tree_t {
     // Get f of elements on segment [l, r)
     T get(int l, int r) {
         clamp(l), clamp(r);
+        if (l >= r) return nullval;
         T resl = nullval, resr = nullval;
         for (l += n, r += n; l < r; l /= 2, r /= 2) {
             if (l & 1) resl = f(resl, tr[l++]);

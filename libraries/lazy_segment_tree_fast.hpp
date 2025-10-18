@@ -79,6 +79,7 @@ class lazy_segment_tree_t {
     // Get f of elements on segment [l, r)
     T get(int l, int r) {
         clamp(l), clamp(r);
+        if (l >= r) return nullval;
         apply_from_root(l), apply_from_root(r - 1);
         T resl = nullval, resr = nullval;
         for (l += n, r += n; l < r; l /= 2, r /= 2) {
@@ -91,6 +92,7 @@ class lazy_segment_tree_t {
     // Modify value on segment [l, r) by val
     void upd(int l, int r, const D& val) {
         clamp(l), clamp(r);
+        if (l >= r) return;
         int l0 = l, r0 = r;
         apply_from_root(l), apply_from_root(r - 1);
         for (l += n, r += n; l < r; l /= 2, r /= 2) {
