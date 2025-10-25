@@ -52,7 +52,12 @@ class segment_tree_t {
 
     // Set value at position pos to val
     void set(int pos, const T& val) {
-        for (tr[pos += n] = val; pos > 1; pos /= 2) tr[pos / 2] = f(tr[pos], tr[pos ^ 1]);
+        for (tr[pos += n] = val; pos > 1; pos /= 2) {
+            if (pos & 1)
+                tr[pos / 2] = f(tr[pos ^ 1], tr[pos]);
+            else
+                tr[pos / 2] = f(tr[pos], tr[pos ^ 1]);
+        }
     }
 };
 

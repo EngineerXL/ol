@@ -50,7 +50,10 @@ class lazy_segment_tree_t {
     // Update node values on route from pos node to root
     void apply_from_leaf(int pos) {
         for (pos += n; pos > 1; pos /= 2) {
-            tr[pos / 2] = f(tr[pos], tr[pos ^ 1]);
+            if (pos & 1)
+                tr[pos / 2] = f(tr[pos ^ 1], tr[pos]);
+            else
+                tr[pos / 2] = f(tr[pos], tr[pos ^ 1]);
             if (delay[pos / 2] != nulldel) apply_to_val(tr[pos / 2], delay[pos / 2]);
         }
     }
