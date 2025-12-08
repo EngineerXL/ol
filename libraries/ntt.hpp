@@ -1,173 +1,154 @@
-#ifndef MODULAR
-#define MODULAR
+#ifndef NTT
+#define NTT
 
+#include <algorithm>
+#include <array>
+#include <cassert>
 #include <iostream>
+#include <limits>
+#include <vector>
 
-using ll = signed long long int;
+/*
+ * Modular integer class
+ * MOD must be prime to use inverse and division
+ * 2 * (MOD - 1) <= INT_MAX must hold
+ */
+template <int mod>
+struct modular_int_t {
+    static_assert(mod - 2 <= std::numeric_limits<int>::max() - mod, "2 * (mod - 1) <= INT_MAX");
+    using mint = modular_int_t<mod>;
 
-template <ll mod>
-struct modular_t {
-    ll value;
+    int value;
 
-    modular_t() : value() {}
+    modular_int_t() : value(0) {}
+    modular_int_t(const mint& other) : value(other.value) {}
 
     template <class T>
-    modular_t(T x) {
-        value = normalize(x);
+    modular_int_t(T x) : value(normalize(x)) {}
+
+    template <class T>
+    static int normalize(T x) {
+        static_assert(std::is_integral<T>::value);
+        if (x < -mod || x > 2 * mod - 1) x %= mod;
+        if (x >= mod) x -= mod;
+        if (x < 0) x += mod;
+        return x;
     }
 
     template <class T>
-    static ll normalize(T x) {
-        ll val;
-        if (-mod <= x and x < mod) {
-            val = x;
-        } else {
-            val = x % mod;
+    mint power(T deg) const {
+        static_assert(std::is_integral<T>::value);
+        mint res(1), x = *this;
+        while (deg > 0) {
+            if (deg & 1) res *= x;
+            x *= x;
+            deg >>= 1;
         }
-        return (val < 0 ? val + mod : val);
+        return res;
     }
 
-    modular_t operator-() { return modular_t(-value); }
+    mint inverse() const { return power(mod - 2); }
 
-    modular_t& operator+=(const modular_t& other) {
-        if ((value += other.value) >= mod) {
-            value -= mod;
-        }
+    mint& operator=(const mint& other) {
+        value = other.value;
         return *this;
     }
 
-    modular_t& operator-=(const modular_t& other) {
-        if ((value -= other.value) < 0) {
-            value += mod;
-        }
+    mint& operator+=(const mint& other) {
+        if ((value += other.value) >= mod) value -= mod;
         return *this;
     }
 
-    modular_t& operator*=(const modular_t& other) {
-        value = normalize(value * other.value);
+    mint& operator-=(const mint& other) {
+        if ((value -= other.value) < 0) value += mod;
         return *this;
     }
 
-    friend modular_t operator+(const modular_t& lhs, const modular_t& rhs) {
-        return (modular_t(lhs) += rhs);
+    mint& operator*=(const mint& other) {
+        value = (int64_t(value) * other.value) % mod;
+        return *this;
     }
 
-    template <class T>
-    friend modular_t operator+(const modular_t& lhs, const T& rhs) {
-        return (modular_t(lhs) += modular_t(rhs));
+    mint& operator/=(const mint& other) { return *this *= other.inverse(); }
+
+    friend mint operator+(const mint& lhs, const mint& rhs) { return (mint(lhs) += rhs); }
+
+    friend mint operator-(const mint& lhs, const mint& rhs) { return (mint(lhs) -= rhs); }
+
+    friend mint operator*(const mint& lhs, const mint& rhs) { return (mint(lhs) *= rhs); }
+
+    friend mint operator/(const mint& lhs, const mint& rhs) { return (mint(lhs) /= rhs); }
+
+    mint operator-() { return mint(-value); }
+
+    friend bool operator==(const mint& lhs, const mint& rhs) { return lhs.value == rhs.value; }
+
+    friend bool operator!=(const mint& lhs, const mint& rhs) { return lhs.value != rhs.value; }
+
+    friend bool operator<(const mint& lhs, const mint& rhs) { return lhs.value < rhs.value; }
+
+    friend bool operator>(const mint& lhs, const mint& rhs) { return lhs.value > rhs.value; }
+
+    mint& operator++() {
+        ++value;
+        if (value == mod) value = 0;
+        return *this;
     }
 
-    template <class T>
-    friend modular_t operator+(const T& lhs, const modular_t& rhs) {
-        return (modular_t(lhs) += rhs);
+    mint& operator--() {
+        --value;
+        if (value == -1) value = mod - 1;
+        return *this;
     }
 
-    friend modular_t operator-(const modular_t& lhs, const modular_t& rhs) {
-        return (modular_t(lhs) -= rhs);
+    mint operator++(int) {
+        mint prev = *this;
+        value++;
+        if (value == mod) value = 0;
+        return prev;
     }
 
-    template <class T>
-    friend modular_t operator-(const modular_t& lhs, const T& rhs) {
-        return (modular_t(lhs) -= modular_t(rhs));
+    mint operator--(int) {
+        mint prev = *this;
+        value--;
+        if (value == -1) value = mod - 1;
+        return prev;
     }
 
-    template <class T>
-    friend modular_t operator-(const T& lhs, const modular_t& rhs) {
-        return (modular_t(lhs) -= rhs);
-    }
-
-    friend modular_t operator*(const modular_t& lhs, const modular_t& rhs) {
-        return (modular_t(lhs) *= rhs);
-    }
-
-    template <class T>
-    friend modular_t operator*(const modular_t& lhs, const T& rhs) {
-        return (modular_t(lhs) *= modular_t(rhs));
-    }
-
-    template <class T>
-    friend modular_t operator*(const T& lhs, const modular_t& rhs) {
-        return (modular_t(lhs) *= rhs);
-    }
-
-    friend bool operator<(const modular_t& lhs, const modular_t& rhs) {
-        return lhs.value < rhs.value;
-    }
-
-    friend bool operator>(const modular_t& lhs, const modular_t& rhs) {
-        return lhs.value > rhs.value;
-    }
-
-    friend bool operator==(const modular_t& lhs, const modular_t& rhs) {
-        return lhs.value == rhs.value;
-    }
-
-    friend bool operator!=(const modular_t& lhs, const modular_t& rhs) {
-        return lhs.value != rhs.value;
-    }
-
-    friend std::ostream& operator<<(std::ostream& out, const modular_t& num) {
-        out << num.value;
-        return out;
-    }
-
-    friend std::istream& operator>>(std::istream& in, modular_t& num) {
-        ll val;
+    friend std::istream& operator>>(std::istream& in, mint& num) {
+        int64_t val;
         in >> val;
         num.value = normalize(val);
         return in;
     }
 
-    template <class T>
-    friend modular_t power(modular_t a, T deg) {
-        ll x = a.value;
-        ll y = deg;
-        ll z = 1;
-        while (y) {
-            if (y & 1) {
-                z = (z * x) % mod;
-            }
-            x = (x * x) % mod;
-            y = y >> 1;
-        }
-        return modular_t(z);
+    friend std::ostream& operator<<(std::ostream& out, const mint& num) {
+        out << num.value;
+        return out;
     }
 
-    modular_t inverse() { return power(*this, mod - 2); }
+    static int primitive_root() {
+        if (mod == 1000000007) return 5;
+        if (mod == 998244353) return 3;
+        if (mod == 786433) return 10;
+
+        static int root = -1;
+        if (root != -1) return root;
+
+        assert(false);
+        // todo calc for any modulo
+    }
 };
 
-#endif /* MODULAR */
+// const int MOD = 1e9 + 7;
+const int MOD = 998244353;
+using mint = modular_int_t<MOD>;
+using vm = std::vector<mint>;
 
-#ifndef NTT
-#define NTT
-
-#include <complex>
-#include <iostream>
-#include <vector>
-
-// const int K = 20;
-// const ll MOD = 7340033;
-// const ll WN = 5;
-const int K = 23;
-const ll MOD = (119 << 23) + 1;
-const ll WN = 31;
-
-using base = modular_t<MOD>;
-using vc = std::vector<base>;
-
-const ll WN_INVERSE = base(WN).inverse().value;
-
-int lg_2(ll x) {
+constexpr int MAX_K = __builtin_ctz(MOD - 1);
+int rev_bits(int x) {
     int y = 0;
-    while ((1 << y) < x) {
-        ++y;
-    }
-    return y;
-}
-
-ll rev_bits(ll x, int n) {
-    ll y = 0;
-    for (int i = 0; i < n; ++i) {
+    for (int i = 0; i < MAX_K; ++i) {
         y = y ^ (x & 1);
         y = y << 1;
         x = x >> 1;
@@ -175,153 +156,150 @@ ll rev_bits(ll x, int n) {
     return (y >> 1);
 }
 
-void ntt(vc& a, bool inverse = false) {
-    int n = a.size();
-    int lg_n = lg_2(n);
-    for (int i = 0; i < n; ++i) {
-        int r_i = rev_bits(i, lg_n);
-        if (i < r_i) {
-            std::swap(a[i], a[r_i]);
-        }
+bool flag_ntt_precalc = false;
+std::array<int, 1 << MAX_K> ntt_rev;
+std::array<mint, 2 * (1 << MAX_K)> ntt_roots;
+void ntt_precalc() {
+    for (int i = 0; i < (1 << MAX_K); ++i) ntt_rev[i] = rev_bits(i);
+    mint g = mint::primitive_root(), w = g.power((MOD - 1) / (1 << MAX_K));
+    for (int cluster = 2; cluster <= (1 << MAX_K); cluster *= 2) {
+        ntt_roots[cluster] = 1;
+        mint wn = w.power((1 << MAX_K) / cluster);
+        for (int i = 1; i < cluster / 2; ++i)
+            ntt_roots[cluster + i] = ntt_roots[cluster + i - 1] * wn;
     }
-    for (int layer = 1; layer <= lg_n; ++layer) {
-        int cluster = 1 << layer;
-        base wn(inverse ? WN_INVERSE : WN);
-        for (int i = cluster; i < (1 << K); i <<= 1) {
-            wn = wn * wn;
-        }
+    flag_ntt_precalc = 1;
+}
+
+void ntt(vm& a, bool inverse = false) {
+    if (!flag_ntt_precalc) ntt_precalc();
+    // Look at the Wandermond matrix: you don't need inverse of wn!
+    if (inverse) std::reverse(a.begin() + 1, a.end());
+    // Count tailing zeros
+    int n = a.size(), lg_n = __builtin_ctz(n);
+    for (int i = 0; i < n; ++i) {
+        int rev_i = ntt_rev[i] >> (MAX_K - lg_n);
+        if (i < rev_i) std::swap(a[i], a[rev_i]);
+    }
+    for (int cluster = 2; cluster <= n; cluster *= 2) {
         for (int j = 0; j < n; j += cluster) {
-            base w(1);
             for (int k = 0; k < cluster / 2; ++k) {
-                base u = a[j + k];
-                base v = a[j + k + cluster / 2] * w;
+                mint u = a[j + k];
+                mint v = a[j + k + cluster / 2] * ntt_roots[cluster + k];
                 a[j + k] = u + v;
                 a[j + k + cluster / 2] = u - v;
-                w *= wn;
             }
         }
     }
     if (inverse) {
-        base rev_n = base(n).inverse();
-        for (int i = 0; i < n; ++i) {
-            a[i] *= rev_n;
-        }
+        mint rev_n = mint(n).inverse();
+        for (int i = 0; i < n; ++i) a[i] *= rev_n;
     }
 }
 
 struct polynom {
-    using vec = std::vector<base>;
+    vm data;
 
-    vec data;
-    size_t n;
+    polynom() : data(1) {}
+    polynom(int n) : data(n) {}
+    polynom(int n, const mint& el) : data(n, el) {}
+    polynom(const vm& coef) : data(coef) {}
 
-    polynom() : data(1), n(1) {}
+    int size() const { return data.size(); }
+    void resize(int n) { data.resize(n); }
 
-    polynom(int _n) : data(_n), n(_n) {}
+    mint& operator[](int id) { return data[id]; }
+    const mint& operator[](int id) const { return data[id]; }
 
-    polynom(int _n, const base& el) : data(_n, el), n(_n) {}
-
-    polynom(const vec& coef) : data(coef), n(data.size()) {}
-
-    size_t size() const { return n; }
-
-    void resize(size_t _n) {
-        n = _n;
-        data.resize(n);
+    polynom& operator+=(const polynom& rhs) {
+        if (rhs.size() > size()) resize(rhs.size());
+        for (int i = 0; i < rhs.size(); ++i) data[i] += rhs[i];
+        return *this;
     }
 
-    base& operator[](size_t id) { return data[id]; }
+    polynom& operator-=(const polynom& rhs) {
+        if (rhs.size() > size()) resize(rhs.size());
+        for (int i = 0; i < rhs.size(); ++i) data[i] -= rhs[i];
+        return *this;
+    }
 
-    const base& operator[](size_t id) const { return data[id]; }
+    polynom& operator*=(mint lambda) {
+        for (int i = 0; i < size(); ++i) data[i] *= lambda;
+        return *this;
+    }
+
+    polynom& operator/=(mint lambda) { return *this *= lambda.inverse(); }
 
     friend polynom operator+(const polynom& lhs, const polynom& rhs) {
-        polynom res(std::max(lhs.size(), rhs.size()));
-        for (size_t i = 0; i < lhs.size(); ++i) {
-            res[i] += lhs[i];
-        }
-        for (size_t i = 0; i < rhs.size(); ++i) {
-            res[i] += rhs[i];
-        }
-        return res;
+        return (polynom(lhs) += rhs);
     }
 
     friend polynom operator-(const polynom& lhs, const polynom& rhs) {
-        polynom res(std::max(lhs.size(), rhs.size()));
-        for (size_t i = 0; i < lhs.size(); ++i) {
-            res[i] += lhs[i];
-        }
-        for (size_t i = 0; i < rhs.size(); ++i) {
-            res[i] -= rhs[i];
-        }
+        return (polynom(lhs) -= rhs);
+    }
+
+    friend polynom operator*(mint lambda, const polynom& p) { return (polynom(p) *= lambda); }
+
+    friend polynom operator/(const polynom& p, mint lambda) { return (polynom(p) /= lambda); }
+
+    friend polynom multiply_naive(const polynom& lhs, const polynom& rhs) {
+        polynom res(lhs.size() + rhs.size() - 1);
+        for (int i = 0; i < lhs.size(); ++i)
+            for (int j = 0; j < rhs.size(); ++j) res[i + j] += lhs[i] * rhs[j];
         return res;
     }
 
-    friend polynom operator*(base lambda, const polynom& p) {
-        polynom res(p);
-        for (size_t i = 0; i < res.size(); ++i) {
-            res[i] *= lambda;
-        }
-        return res;
-    }
-
-    friend polynom operator/(const polynom& p, base lambda) {
-        polynom res(p);
-        base rev_lambda(lambda);
-        rev_lambda = rev_lambda.inverse();
-        for (size_t i = 0; i < res.size(); ++i) {
-            res[i] *= rev_lambda;
-        }
-        return res;
-    }
-
-    friend polynom operator*(const polynom& lhs, const polynom& rhs) {
-        size_t lr_sz = std::max(lhs.size(), rhs.size());
-        int lg_sz = lg_2(lr_sz) + 1;
-        size_t n = (1 << lg_sz);
-        vc a(n), b(n);
-        for (size_t i = 0; i < lhs.size(); ++i) {
-            a[i] = base(lhs[i]);
-        }
-        for (size_t i = 0; i < rhs.size(); ++i) {
-            b[i] = base(rhs[i]);
-        }
-        ntt(a, false);
-        ntt(b, false);
-        for (size_t i = 0; i < n; ++i) {
-            a[i] *= b[i];
-        }
+    friend polynom multiply_ntt(const polynom& lhs, const polynom& rhs) {
+        int out_sz = lhs.size() + rhs.size() - 1, lg_sz = 32 - __builtin_clz(out_sz),
+            n = 1 << lg_sz;
+        vm a(lhs.data), b(rhs.data);
+        a.resize(n), b.resize(n);
+        ntt(a), ntt(b);
+        for (int i = 0; i < n; ++i) a[i] *= b[i];
         ntt(a, true);
-        // Shrinks result for better performance
-        // in D&C tasks
-        a.resize(lhs.size() + rhs.size() - 1);
+        // Shrinks result for better performance in D&C tasks
+        a.resize(out_sz);
         return a;
     }
 
+    // Optimize multiplication by low degree polynom
+    constexpr static int FFT_NAIVE_SZ_ = 60;
+
+    friend polynom operator*(const polynom& lhs, const polynom& rhs) {
+        if (std::min(lhs.size(), rhs.size()) < FFT_NAIVE_SZ_)
+            return multiply_naive(lhs, rhs);
+        else
+            return multiply_ntt(lhs, rhs);
+    }
+
     friend std::istream& operator>>(std::istream& in, polynom& poly) {
-        size_t deg;
+        int deg;
         in >> deg;
-        size_t n = deg + 1;
+        int n = deg + 1;
         poly.resize(n);
-        for (size_t i = 0; i < n; ++i) {
-            in >> poly[i];
-        }
+        for (int i = 0; i < n; ++i) in >> poly[i];
         return in;
     }
 
     friend std::ostream& operator<<(std::ostream& out, const polynom& poly) {
-        for (size_t i = 0; i < poly.size(); ++i) {
-            if (i) {
-                out << ' ';
-            }
+        for (int i = 0; i < poly.size(); ++i) {
+            if (i) out << ' ';
             out << poly[i];
         }
         return out;
     }
 
+    // Legacy
+    static int lg_2(int x) {
+        int y = 0;
+        while ((1 << y) < x) ++y;
+        return y;
+    }
+
     friend polynom inverse(polynom p, int m) {
         int lg_m = lg_2(m);
         p.resize(1 << lg_m);
-        vec q0 = {p[0].inverse()};
+        vm q0 = {p[0].inverse()};
         polynom q(q0);
         for (int step = 0; step < lg_m; ++step) {
             int cur_m = 1 << step;
@@ -348,8 +326,6 @@ struct polynom {
         q.resize(m);
         return q;
     }
-
-    ~polynom() = default;
 };
 
 #endif /* NTT */

@@ -123,14 +123,11 @@ struct modular_int_t {
         out << num.value;
         return out;
     }
-
-    // TODO primitive root for NTT
 };
 
 // const int MOD = 1e9 + 7;
 const int MOD = 998244353;
 using mint = modular_int_t<MOD>;
-
 using vm = std::vector<mint>;
 
 // No need to run any init function, it dynamically resizes the data.
