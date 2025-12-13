@@ -289,37 +289,31 @@ struct polynom {
         return out;
     }
 
-    // Legacy
-    static int lg_2(int x) {
-        int y = 0;
-        while ((1 << y) < x) ++y;
-        return y;
-    }
-
-    friend polynom inverse(polynom p, int m) {
-        int lg_m = lg_2(m);
+    /*
+     * For a given polynomial f(x) computes polynomial g(x)
+     * such that f(x) * g(x) = 1 mod x^m
+     * Complexity: O(m log m)
+     */
+    polynom inverse(int m) {
+        polynom p(data);
+        int lg_m = 32 - __builtin_clz(m);
         p.resize(1 << lg_m);
-        vm q0 = {p[0].inverse()};
-        polynom q(q0);
+        polynom q(1, p[0].inverse());
+        // MW Pre-Finals 2022 FFT Lecture
         for (int step = 0; step < lg_m; ++step) {
             int cur_m = 1 << step;
-            polynom p0(cur_m);
-            polynom p1(cur_m);
+            polynom p0(cur_m), p1(cur_m);
             for (int i = 0; i < cur_m; ++i) {
                 p0[i] = p[i];
                 p1[i] = p[i + cur_m];
             }
-            polynom rem = q * p0;
-            polynom r(cur_m);
+            polynom rem = q * p0, r(cur_m);
             rem.resize(2 * cur_m);
-            for (int i = 0; i < cur_m; ++i) {
-                r[i] = rem[i + cur_m];
-            }
-            polynom t = q * (r + (p1 * q));
-            polynom qs(cur_m * 2);
+            for (int i = 0; i < cur_m; ++i) r[i] = rem[i + cur_m];
+            polynom t = q * (r + (p1 * q)), qs(cur_m * 2);
             for (int i = 0; i < cur_m; ++i) {
                 qs[i] = q[i];
-                qs[i + cur_m] = -1 * t[i];
+                qs[i + cur_m] = -t[i];
             }
             q = qs;
         }
