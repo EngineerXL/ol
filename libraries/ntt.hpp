@@ -290,6 +290,27 @@ struct polynom {
     }
 
     /*
+     * Computes p ^ y mod x ^ m, result has size m
+     * Complexity: O(m log m log y)
+     */
+    template <class T>
+    polynom modpow(T y, int m) const {
+        static_assert(std::is_integral<T>::value);
+        polynom res(1, 1), p(data);
+        while (y > 0) {
+            if (y % 2) {
+                res = res * p;
+                if (res.size() > m) res.resize(m);
+            }
+            p = p * p;
+            if (p.size() > m) p.resize(m);
+            y /= 2;
+        }
+        res.resize(m);
+        return res;
+    }
+
+    /*
      * For a given polynomial f(x) computes polynomial g(x)
      * such that f(x) * g(x) = 1 mod x^m
      * Complexity: O(m log m)
