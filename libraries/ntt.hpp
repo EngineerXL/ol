@@ -341,6 +341,35 @@ struct polynom {
         q.resize(m);
         return q;
     }
+
+    /* Given generating function in form P(x)/Q(x), where d = deg(Q(x)) and deg(P) <= d - 1
+     * Computes a_n = [x^n] P(x)/Q(x)
+     * Time complexity: O(d log d log n) or O(d ^ 2 log n) if d < FFT_NAIVE_SZ_ (60)
+     * Application for linear recurense:
+     * a_n = sum_{j=1...d} c_j * a_{n - j} = a_{n-1} * c_1 + a_{n-2} * c_2 + ... + a_{n-d} * c_d
+     * Q(x) = 1 - sum_{j=1...d} c_j * x^j = 1 - ( c_1 * x + c_2 * x^2 + ... + c_d * x^d)
+     */
+    template <class T>
+    friend mint BostanMori(polynom p, polynom q, T n) {
+        static_assert(std::is_integral<T>::value);
+        int d = q.size();
+        assert(p.size() < d);
+        p.resize(d - 1);
+        while (n > 0) {
+            polynom q_neg(q);
+            for (int i = 1; i < d; i += 2) q_neg[i] *= -1;
+            // U(x) = P(x) * Q(-x)
+            polynom u = p * q_neg;
+            // V(x ^ 2) = Q(x) * Q(-x)
+            polynom vv = q * q_neg;
+            // P(x) = U_e(x) or U_o(x)
+            for (int i = 0; i < d - 1; ++i) p[i] = u[2 * i + n % 2];
+            // Q(x) = V(x)
+            for (int i = 0; i < d; ++i) q[i] = vv[2 * i];
+            n /= 2;
+        }
+        return p[0] / q[0];
+    }
 };
 
 #endif /* NTT */
