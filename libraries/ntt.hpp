@@ -316,27 +316,19 @@ struct polynom {
      * Complexity: O(m log m)
      */
     polynom inverse(int m) {
-        polynom p(data);
         int lg_m = 32 - __builtin_clz(m);
-        p.resize(1 << lg_m);
-        polynom q(1, p[0].inverse());
-        // MW Pre-Finals 2022 FFT Lecture
-        for (int step = 0; step < lg_m; ++step) {
-            int cur_m = 1 << step;
-            polynom p0(cur_m), p1(cur_m);
-            for (int i = 0; i < cur_m; ++i) {
-                p0[i] = p[i];
-                p1[i] = p[i + cur_m];
-            }
-            polynom rem = q * p0, r(cur_m);
-            rem.resize(2 * cur_m);
-            for (int i = 0; i < cur_m; ++i) r[i] = rem[i + cur_m];
-            polynom t = q * (r + (p1 * q)), qs(cur_m * 2);
-            for (int i = 0; i < cur_m; ++i) {
-                qs[i] = q[i];
-                qs[i + cur_m] = -t[i];
-            }
-            q = qs;
+        auto p0 = data[0], q0 = p0.inverse();
+        polynom p(1, -p0), q(1, q0);
+        // Q_{k+1} = Q_k * (2 - P * Q_k)
+        for (int k = 0; k < lg_m; ++k) {
+            int nxt_sz = 1 << (k + 1);
+            for (int i = nxt_sz / 2; i < std::min(size(), nxt_sz); ++i) p.data.push_back(-data[i]);
+            polynom pq = p * q;
+            pq.resize(nxt_sz);
+            pq[0] += 2;
+            polynom nq = q * pq;
+            nq.resize(nxt_sz);
+            q = nq;
         }
         q.resize(m);
         return q;
