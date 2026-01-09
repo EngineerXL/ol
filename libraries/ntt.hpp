@@ -312,15 +312,16 @@ struct polynom {
 
     /*
      * For a given polynomial f(x) computes polynomial g(x)
-     * such that f(x) * g(x) = 1 mod x^m
-     * Complexity: O(m log m)
+     * such that f(x) * g(x) = 1 mod x^n
+     * Complexity: O(n log n)
      */
-    polynom inverse(int m) {
-        int lg_m = 32 - __builtin_clz(m);
+    polynom inverse(int n) {
+        int lg_n = 32 - __builtin_clz(n);
         auto p0 = data[0], q0 = p0.inverse();
         polynom p(1, -p0), q(1, q0);
+        p.data.reserve(1 << lg_n);
         // Q_{k+1} = Q_k * (2 - P * Q_k)
-        for (int k = 0; k < lg_m; ++k) {
+        for (int k = 0; k < lg_n; ++k) {
             int nxt_sz = 1 << (k + 1);
             for (int i = nxt_sz / 2; i < std::min(size(), nxt_sz); ++i) p.data.push_back(-data[i]);
             polynom pq = p * q;
@@ -330,7 +331,50 @@ struct polynom {
             nq.resize(nxt_sz);
             q = nq;
         }
-        q.resize(m);
+        q.resize(n);
+        return q;
+    }
+
+    polynom deriv() {
+        polynom res(data.size() - 1);
+        for (int i = 1; i < size(); ++i) res[i - 1] = data[i] * i;
+        return res;
+    }
+
+    polynom integrate() {
+        polynom res(data.size() + 1);
+        for (int i = 0; i < size(); ++i) res[i + 1] = data[i] / (i + 1);
+        return res;
+    }
+
+    /*
+     * Calculates first n terms of ln P(x)
+     * Complexity: O(n log n)
+     * Taylor series: ln(1 - x) = -( x + x^2 / 2 + x^3 / 3 + x^4 / 4 + ... )
+     */
+    polynom log(int n) { return (deriv() * inverse(n)).integrate(); }
+
+    /*
+     * Calculates first n terms of e^P(x)
+     * Complexity: O(n log n)
+     * Taylor series: e^x = 1 + x + x^2 / 2! + x^3 / 3! + x^4 / 4! + ...
+     */
+    polynom exp(int n) {
+        int lg_n = 32 - __builtin_clz(n);
+        auto p0 = data[0];
+        polynom p(1, p0), q(1, 1);
+        p.data.reserve(1 << lg_n);
+        // Q_{k+1} = Q_k * (1 + P - ln Q_k)
+        for (int k = 0; k < lg_n; ++k) {
+            int nxt_sz = 1 << (k + 1);
+            for (int i = nxt_sz / 2; i < std::min(size(), nxt_sz); ++i) p.data.push_back(data[i]);
+            polynom tmp = p - q.log(nxt_sz);
+            tmp[0] += 1;
+            polynom nq = q * tmp;
+            nq.resize(nxt_sz);
+            q = nq;
+        }
+        q.resize(n);
         return q;
     }
 
