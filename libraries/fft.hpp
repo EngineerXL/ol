@@ -1,28 +1,21 @@
 #ifndef FFT
 #define FFT
 
+#include <algorithm>
+#include <array>
 #include <complex>
 #include <iostream>
 #include <vector>
 
-const double EPS = 1e-9;
-const double PI = acos(-1);
+using fp = double;
+using vfp = std::vector<fp>;
+using c = std::complex<fp>;
+using vc = std::vector<c>;
 
-using base = std::complex<double>;
-
-using vc = std::vector<base>;
-
-int lg_2(int64_t x) {
+constexpr int FFT_MAX_K = 22;
+int rev_bits(int x) {
     int y = 0;
-    while ((1 << y) < x) {
-        ++y;
-    }
-    return y;
-}
-
-int64_t rev_bits(int64_t x, int n) {
-    int64_t y = 0;
-    for (int i = 0; i < n; ++i) {
+    for (int i = 0; i < FFT_MAX_K; ++i) {
         y = y ^ (x & 1);
         y = y << 1;
         x = x >> 1;
@@ -30,167 +23,149 @@ int64_t rev_bits(int64_t x, int n) {
     return (y >> 1);
 }
 
-void fft(vc &a, bool inverse = false) {
-    int n = a.size();
-    int lg_n = lg_2(n);
-    for (int i = 0; i < n; ++i) {
-        int r_i = rev_bits(i, lg_n);
-        if (i < r_i) {
-            std::swap(a[i], a[r_i]);
-        }
+bool flag_fft_precalc = false;
+std::array<int, 1 << FFT_MAX_K> fft_rev;
+std::array<c, 2 * (1 << FFT_MAX_K)> fft_roots;
+void fft_precalc() {
+    for (int i = 0; i < (1 << FFT_MAX_K); ++i) fft_rev[i] = rev_bits(i);
+    const fp PI = std::acos(-1);
+    for (int cluster = 2; cluster <= (1 << FFT_MAX_K); cluster *= 2) {
+        fft_roots[cluster] = c(1, 0);
+        c wn(std::cos(2 * PI / cluster), std::sin(2 * PI / cluster));
+        for (int i = 1; i < cluster / 2; ++i)
+            fft_roots[cluster + i] = fft_roots[cluster + i - 1] * wn;
     }
-    for (int layer = 1; layer <= lg_n; ++layer) {
-        int cluster = 1 << layer;
-        double phi = (2 * PI) / cluster;
-        if (inverse) {
-            phi *= -1;
-        }
-        base wn(cos(phi), sin(phi));
+    flag_fft_precalc = 1;
+}
+
+void fft(vc& a, bool inverse = false) {
+    if (!flag_fft_precalc) fft_precalc();
+    // Look at the Wandermond matrix: you don't need inverse of wn!
+    if (inverse) std::reverse(a.begin() + 1, a.end());
+    // Count tailing zeros
+    int n = a.size(), lg_n = __builtin_ctz(n);
+    for (int i = 0; i < n; ++i) {
+        int rev_i = fft_rev[i] >> (FFT_MAX_K - lg_n);
+        if (i < rev_i) std::swap(a[i], a[rev_i]);
+    }
+    for (int cluster = 2; cluster <= n; cluster *= 2) {
         for (int j = 0; j < n; j += cluster) {
-            base w(1, 0);
             for (int k = 0; k < cluster / 2; ++k) {
-                base u = a[j + k];
-                base v = a[j + k + cluster / 2] * w;
+                c u = a[j + k];
+                c v = a[j + k + cluster / 2] * fft_roots[cluster + k];
                 a[j + k] = u + v;
                 a[j + k + cluster / 2] = u - v;
-                w *= wn;
             }
         }
     }
-    if (inverse) {
-        for (int i = 0; i < n; ++i) {
-            a[i] /= n;
-        }
-    }
+    if (inverse)
+        for (int i = 0; i < n; ++i) a[i] /= n;
 }
 
 struct polynom {
-    using vec = std::vector<double>;
+    vfp data;
 
-    vec data;
-    size_t n;
+    polynom() : data(1) {}
+    polynom(int n) : data(n) {}
+    polynom(int n, const fp& el) : data(n, el) {}
+    polynom(const vfp& coef) : data(coef) {}
 
-    polynom() : data(1), n(1) {}
+    int size() const { return data.size(); }
+    void resize(int n) { data.resize(n); }
 
-    polynom(int _n) : data(_n), n(_n) {}
+    fp& operator[](int id) { return data[id]; }
+    const fp& operator[](int id) const { return data[id]; }
 
-    polynom(const vec &coef) : data(coef), n(data.size()) {}
-
-    size_t size() const { return n; }
-
-    void resize(size_t _n) {
-        n = _n;
-        data.resize(n);
+    polynom& operator+=(const polynom& rhs) {
+        if (rhs.size() > size()) resize(rhs.size());
+        for (int i = 0; i < rhs.size(); ++i) data[i] += rhs[i];
+        return *this;
     }
 
-    double &operator[](size_t id) { return data[id]; }
-
-    const double &operator[](size_t id) const { return data[id]; }
-
-    friend polynom operator+(const polynom &lhs, const polynom &rhs) {
-        polynom res(std::max(lhs.size(), rhs.size()));
-        for (size_t i = 0; i < lhs.size(); ++i) {
-            res[i] += lhs[i];
-        }
-        for (size_t i = 0; i < rhs.size(); ++i) {
-            res[i] += rhs[i];
-        }
-        return res;
+    polynom& operator-=(const polynom& rhs) {
+        if (rhs.size() > size()) resize(rhs.size());
+        for (int i = 0; i < rhs.size(); ++i) data[i] -= rhs[i];
+        return *this;
     }
 
-    friend polynom operator-(const polynom &lhs, const polynom &rhs) {
-        polynom res(std::max(lhs.size(), rhs.size()));
-        for (size_t i = 0; i < lhs.size(); ++i) {
-            res[i] += lhs[i];
-        }
-        for (size_t i = 0; i < rhs.size(); ++i) {
-            res[i] -= rhs[i];
-        }
-        return res;
+    polynom& operator*=(fp lambda) {
+        for (int i = 0; i < size(); ++i) data[i] *= lambda;
+        return *this;
     }
 
-    friend polynom operator*(double lambda, const polynom &p) {
-        polynom res(p);
-        for (size_t i = 0; i < res.size(); ++i) {
-            res[i] *= lambda;
-        }
-        return res;
+    polynom& operator/=(fp lambda) {
+        for (int i = 0; i < size(); ++i) data[i] /= lambda;
+        return *this;
     }
 
-    friend polynom operator/(const polynom &p, double lambda) {
-        polynom res(p);
-        for (size_t i = 0; i < res.size(); ++i) {
-            res[i] /= lambda;
-        }
-        return res;
+    friend polynom operator+(const polynom& lhs, const polynom& rhs) {
+        return (polynom(lhs) += rhs);
     }
 
-    friend polynom slow_mul(const polynom &lhs, const polynom &rhs) {
+    friend polynom operator-(const polynom& lhs, const polynom& rhs) {
+        return (polynom(lhs) -= rhs);
+    }
+
+    friend polynom operator*(fp lambda, const polynom& p) { return (polynom(p) *= lambda); }
+
+    friend polynom operator/(const polynom& p, fp lambda) { return (polynom(p) /= lambda); }
+
+    friend polynom multiply_naive(const polynom& lhs, const polynom& rhs) {
         polynom res(lhs.size() + rhs.size() - 1);
-        for (size_t i = 0; i < lhs.size(); ++i) {
-            for (size_t j = 0; j < rhs.size(); ++j) {
-                res[i + j] += lhs[i] * rhs[j];
-            }
-        }
+        for (int i = 0; i < lhs.size(); ++i)
+            for (int j = 0; j < rhs.size(); ++j) res[i + j] += lhs[i] * rhs[j];
         return res;
     }
 
-    friend polynom fast_mul(const polynom &lhs, const polynom &rhs) {
-        size_t n = std::max(lhs.size(), rhs.size()) * 2;
-        size_t m = (1 << lg_2(n));
-        vc a(m), b(m);
-        for (size_t i = 0; i < lhs.size(); ++i) {
-            a[i] = base(lhs[i]);
-        }
-        for (size_t i = 0; i < rhs.size(); ++i) {
-            b[i] = base(rhs[i]);
-        }
-        fft(a, false);
-        fft(b, false);
-        for (size_t i = 0; i < m; ++i) {
-            a[i] *= b[i];
-        }
+    friend polynom multiply_fft(const polynom& lhs, const polynom& rhs) {
+        int out_sz = lhs.size() + rhs.size() - 1, lg_sz = 32 - __builtin_clz(out_sz),
+            n = 1 << lg_sz;
+        vc a(n), b(n);
+        for (int i = 0; i < lhs.size(); ++i) a[i].real(lhs[i]);
+        for (int i = 0; i < rhs.size(); ++i) b[i].real(rhs[i]);
+        fft(a), fft(b);
+        for (int i = 0; i < n; ++i) a[i] *= b[i];
         fft(a, true);
-        polynom res(lhs.size() + rhs.size() - 1);
-        for (size_t i = 0; i < res.size(); ++i) {
-            res[i] = a[i].real();
-        }
+        polynom res(out_sz);
+        for (int i = 0; i < out_sz; ++i) res[i] = a[i].real();
         return res;
     }
 
-    constexpr static size_t FFT_N = 1e4;
+    // Optimize multiplication by low degree polynom
+    constexpr static int FFT_NAIVE_SZ_ = 60;
 
-    friend polynom operator*(const polynom &lhs, const polynom &rhs) {
-        if (lhs.size() * rhs.size() < FFT_N) {
-            return slow_mul(lhs, rhs);
-        } else {
-            return fast_mul(lhs, rhs);
-        }
+    friend polynom operator*(const polynom& lhs, const polynom& rhs) {
+        if (std::min(lhs.size(), rhs.size()) < FFT_NAIVE_SZ_)
+            return multiply_naive(lhs, rhs);
+        else
+            return multiply_fft(lhs, rhs);
     }
 
-    friend std::istream &operator>>(std::istream &in, polynom &poly) {
-        size_t deg;
-        in >> deg;
-        size_t n = deg + 1;
-        poly.n = n;
-        poly.data.resize(n);
-        for (size_t i = 0; i < n; ++i) {
-            in >> poly[deg - i];
+    // Use this after each multiplication to do computations modulo mod
+    polynom& operator%=(fp mod) {
+        for (fp& el : data) {
+            fp div = std::round(el / mod);
+            el = std::round(el - mod * div);
         }
+        return *this;
+    }
+
+    friend std::istream& operator>>(std::istream& in, polynom& poly) {
+        int deg;
+        in >> deg;
+        int n = deg + 1;
+        poly.resize(n);
+        for (int i = 0; i < n; ++i) in >> poly[i];
         return in;
     }
 
-    friend std::ostream &operator<<(std::ostream &out, const polynom &poly) {
-        size_t n = poly.size();
-        out << n - 1;
-        for (size_t i = 0; i < n; ++i) {
-            // out << ' ' << poly[n - 1 - i];
-            out << ' ' << (int64_t)(round(poly[n - 1 - i]));
+    friend std::ostream& operator<<(std::ostream& out, const polynom& poly) {
+        for (int i = 0; i < poly.size(); ++i) {
+            if (i) out << ' ';
+            out << poly[i];
         }
         return out;
     }
-
-    ~polynom() = default;
 };
 
 #endif /* FFT */
