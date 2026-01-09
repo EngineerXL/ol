@@ -347,7 +347,7 @@ struct polynom {
      * Time complexity: O(d log d log n) or O(d ^ 2 log n) if d < FFT_NAIVE_SZ_ (60)
      * Application for linear recurense:
      * a_n = sum_{j=1...d} c_j * a_{n - j} = a_{n-1} * c_1 + a_{n-2} * c_2 + ... + a_{n-d} * c_d
-     * Q(x) = 1 - sum_{j=1...d} c_j * x^j = 1 - ( c_1 * x + c_2 * x^2 + ... + c_d * x^d)
+     * Q(x) = 1 - sum_{j=1...d} c_j * x^j = 1 - ( c_1 * x + c_2 * x^2 + ... + c_d * x^d )
      */
     template <class T>
     friend mint BostanMori(polynom p, polynom q, T n) {
@@ -369,6 +369,18 @@ struct polynom {
             n /= 2;
         }
         return p[0] / q[0];
+    }
+
+    void rev() { std::reverse(data.begin(), data.end()); }
+
+    friend polynom operator/(polynom lhs, polynom rhs) {
+        int n = lhs.size(), m = rhs.size();
+        if (n < m) return polynom(1, 0);
+        int out_sz = n - m + 1;
+        lhs.rev(), rhs.rev();
+        polynom res = lhs * rhs.inverse(out_sz);
+        res.resize(out_sz), res.rev();
+        return res;
     }
 };
 
