@@ -342,12 +342,15 @@ struct polynom {
         return q;
     }
 
-    /* Given generating function in form P(x)/Q(x), where d = deg(Q(x)) and deg(P) <= d - 1
-     * Computes a_n = [x^n] P(x)/Q(x)
+    /*
+     * Given generating function G(x) in form P(x)/Q(x), where d = deg(Q(x)) and deg(P) <= d - 1
+     * Computes n-th term of G(x): a_n = [x^n] P(x)/Q(x)
      * Time complexity: O(d log d log n) or O(d ^ 2 log n) if d < FFT_NAIVE_SZ_ (60)
-     * Application for linear recurense:
+     * Application for linear recurrense:
      * a_n = sum_{j=1...d} c_j * a_{n - j} = a_{n-1} * c_1 + a_{n-2} * c_2 + ... + a_{n-d} * c_d
-     * Q(x) = 1 - sum_{j=1...d} c_j * x^j = 1 - ( c_1 * x + c_2 * x^2 + ... + c_d * x^d )
+     * Q(x) = 1 - sum_{j=1...d} c_j * x^j = 1 - (c_1 * x + c_2 * x^2 + ... + c_d * x^d)
+     * P(x) = F(x) * Q(x) mod x^d, where F(x) represents first d terms of recurrense:
+     * F(x) = a_0 + a_1 * x + a_2 * x^2 + ... a_{d-1} * x^{d-1}
      */
     template <class T>
     friend mint BostanMori(polynom p, polynom q, T n) {
