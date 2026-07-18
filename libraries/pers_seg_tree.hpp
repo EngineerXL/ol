@@ -1,6 +1,8 @@
 #ifndef PERS_SEG_TREE
 #define PERS_SEG_TREE
 
+#include <array>
+#include <cassert>
 #include <vector>
 
 /**
@@ -10,30 +12,43 @@
  */
 
 template <class T>
-struct persegtree {
+class persegtree {
+   private:
     struct node {
-        node* left;
-        node* right;
+        node* left = nullptr;
+        node* right = nullptr;
         T val;
 
-        node(const T& x) : left(nullptr), right(nullptr), val(x) {}
+        node() = default;
 
-        node(const node& other)
-            : left(other.left), right(other.right), val(other.val) {}
+        node(const T& x) : val(x) {}
     };
 
     int n;
     using nodeptr = node*;
     std::vector<nodeptr> vers;
+    // q * log n
+    constexpr static size_t MAX_NODES = 2e5 * 18 + 228;
+    size_t _nodes_cnt = 0;
+    std::array<node, MAX_NODES> _storage;
 
-    persegtree(int n_) : n(n_) {}
+    // Create a node
+    nodeptr create(const T& val = nullval) {
+        _storage[_nodes_cnt] = node(val);
+        assert(_nodes_cnt < MAX_NODES);
+        return &_storage[_nodes_cnt++];
+    }
 
-    persegtree(const std::vector<T>& a) : persegtree(a.size()) {
-        vers.push_back(build(0, n, a));
+    T get_val(const nodeptr& u) { return u == nullptr ? nullval : u->val; }
+
+    nodeptr copy(const nodeptr& u) {
+        _storage[_nodes_cnt] = node(*u);
+        assert(_nodes_cnt < MAX_NODES);
+        return &_storage[_nodes_cnt++];
     }
 
     nodeptr build(int lo, int hi, const std::vector<T>& a) {
-        nodeptr u = new node(0);
+        nodeptr u = create();
         if (lo + 1 == hi) {
             u->val = a[lo];
             return u;
@@ -45,15 +60,16 @@ struct persegtree {
         return u;
     }
 
+   public:
+    constexpr static T nullval = 0;
+
     T f(const T& x, const T& y) { return x + y; }
 
-    T get_val(const nodeptr& u) { return u == nullptr ? 0 : u->val; }
+    persegtree(int n_) : n(n_) {}
 
-    nodeptr copy(const nodeptr& u) { return new node(*u); }
+    persegtree(const std::vector<T>& a) : persegtree(a.size()) { vers.push_back(build(0, n, a)); }
 
-    void set(int v, int p, const T& x) {
-        vers.push_back(set(vers[v], 0, n, p, x));
-    }
+    void set(int v, int p, const T& x) { vers.push_back(set(vers[v], 0, n, p, x)); }
 
     nodeptr set(nodeptr u, int lo, int hi, int p, const T& x) {
         u = copy(u);
@@ -75,7 +91,7 @@ struct persegtree {
 
     T get(nodeptr u, int lo, int hi, int l, int r) {
         if (u == nullptr || r <= lo || hi <= l) {
-            return T(0);
+            return T(nullval);
         }
         if (l <= lo && hi <= r) {
             return u->val;
